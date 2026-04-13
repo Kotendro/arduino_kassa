@@ -25,6 +25,8 @@ void setup() {
 }
 
 void loop() {
+    Serial.print("ff");
+    
     switch (KP.keyState()) {
         case PRESSED: {
             char key = KP.getkey();
