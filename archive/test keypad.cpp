@@ -1,5 +1,6 @@
 #include <Arduino.h>
-#include <LiquidCrystal_I2C.h>
+#define _LCD_TYPE 1
+#include <LCD_1602_RUS_ALL.h>
 #include <OnewireKeypad.h>
 
 // LiquidCrystal_I2C lcd(0x27, 16, 2);
