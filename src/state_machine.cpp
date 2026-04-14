@@ -54,7 +54,7 @@ void setState(AppState newState, bool pushToStack) {
     // При входе в состояние обновляем экран
     switch (currentState) {
         case STATE_WAIT_FOR_CARD:
-            lcdPrint("Жду карту", "");
+            lcdPrint("Жду карту", "абвгдеёжзилкмноп");
             break;
         case STATE_CARD_SHOWN:
             // экран будет обновлён отдельно при получении UID

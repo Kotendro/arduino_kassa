@@ -112,11 +112,13 @@ void setup()
     lcd.init();
     lcd.backlight();
     lcd.setCursor(0, 0);
-    lcdPrint("Игровой терминал", "Стартуем!");
+    lcdPrint("Тест 1", "абвгдеёжзилкмноп");
     delay(5000);
     lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Тест 2");
     lcd.setCursor(0, 1);
-    lcd.print("");
+    lcd.print("абвгдеёжзилкмноп");
     delay(5000);
 
     // RFID
