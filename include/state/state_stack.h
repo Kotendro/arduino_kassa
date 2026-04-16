@@ -1,6 +1,5 @@
-// state_machine.h
-#ifndef STATE_MACHINE_H
-#define STATE_MACHINE_H
+#ifndef STATE_STACK_H
+#define STATE_STACK_H
 
 #include <Arduino.h>
 
@@ -14,9 +13,9 @@ enum AppState : uint8_t {
 // Стек состояний
 class StateStack {
 private:
-    static const uint8_t MAX_DEPTH = 8;
-    AppState stack[MAX_DEPTH];
-    uint8_t depth;
+    static const uint8_t MAX_DEPTH_ = 8;
+    AppState stack_[MAX_DEPTH_];
+    uint8_t depth_;
 public:
     StateStack();
     void push(AppState state);
@@ -25,9 +24,5 @@ public:
     void reset();
     bool isEmpty() const;
 };
-
-void stateMachineLoop();
-void setState(AppState newState, bool pushToStack = true);
-void goBack();
 
 #endif
