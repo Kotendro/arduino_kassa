@@ -2,35 +2,41 @@
 
 StateStack::StateStack() : depth_(0) {}
 
-
-void StateStack::push(AppState state) {
-    if (depth_ < MAX_DEPTH_) {
+void StateStack::push(AppState state)
+{
+    if (depth_ < MAX_DEPTH_)
+    {
         stack_[depth_++] = state;
     }
 }
 
-
-AppState StateStack::pop() {
-    if (depth_ > 0) {
-        return stack_[--depth_];
+AppState StateStack::pop()
+{
+    if (depth_ == 0)
+    {
+        return STATE_IDLE;
     }
-    return STATE_WAIT_FOR_CARD; // fallback
+
+    depth_--;
+    return stack_[depth_];
 }
 
-
-AppState StateStack::current() const {
-    if (depth_ > 0) {
-        return stack_[depth_ - 1];
+AppState StateStack::current() const
+{
+    if (depth_ == 0)
+    {
+        return STATE_IDLE;
     }
-    return STATE_WAIT_FOR_CARD;
+
+    return stack_[depth_ - 1];
 }
 
-
-void StateStack::reset() {
+void StateStack::reset()
+{
     depth_ = 0;
 }
 
-
-bool StateStack::isEmpty() const {
+bool StateStack::isEmpty() const
+{
     return depth_ == 0;
 }

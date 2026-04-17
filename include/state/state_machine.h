@@ -1,21 +1,33 @@
 #ifndef STATE_MACHINE_H
 #define STATE_MACHINE_H
 
+#include "event.h"
 #include "state/state_stack.h"
 
-class StateMachine {
+class StateMachine
+{
 private:
     AppState currentState_;
     StateStack stateStack_;
 
+    uint32_t firstCardId_;
+    uint32_t secondCardId_;
+    int inputValue_;
+
     void enterState(AppState state);
-    void updateState(AppState state);
+    void resetContext();
+
+    void runScenario1();
+    void runScenario2();
+    void runScenario3();
 
 public:
     StateMachine();
 
     void setState(AppState newState, bool pushToStack = true);
     void goBack();
+
+    void handleEvent(const Event& event);
     void loop();
 };
 

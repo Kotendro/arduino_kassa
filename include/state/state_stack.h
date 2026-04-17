@@ -3,21 +3,25 @@
 
 #include <Arduino.h>
 
-// Состояния автомата
-enum AppState : uint8_t {
-    STATE_STARTUP,
-    STATE_WAIT_FOR_CARD,
-    STATE_CARD_SHOWN
+enum AppState : uint8_t
+{
+    STATE_IDLE,
+    STATE_AFTER_INPUT,
+    STATE_AFTER_CARD,
+    STATE_AFTER_SECOND_CARD
 };
 
-// Стек состояний
-class StateStack {
+
+class StateStack
+{
 private:
     static const uint8_t MAX_DEPTH_ = 8;
     AppState stack_[MAX_DEPTH_];
     uint8_t depth_;
+
 public:
     StateStack();
+
     void push(AppState state);
     AppState pop();
     AppState current() const;
