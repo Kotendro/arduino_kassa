@@ -2,8 +2,6 @@
 
 StateMachine::StateMachine()
     : currentState_(STATE_IDLE),
-      firstCardId_(0),
-      secondCardId_(0),
       inputValue_(0)
 {
     enterState(currentState_);
@@ -59,8 +57,9 @@ void StateMachine::enterState(AppState state)
 
 void StateMachine::resetContext()
 {
-    firstCardId_ = 0;
-    secondCardId_ = 0;
+    firstCard_.clear();
+    secondCard_.clear();
+
     inputValue_ = 0;
     stateStack_.reset();
 }
@@ -101,7 +100,7 @@ void StateMachine::handleEvent(const Event& event)
             }
             else if (event.type == EVENT_CARD_READ)
             {
-                firstCardId_ = event.cardId;
+                firstCard_ = event.card;
                 setState(STATE_AFTER_CARD, false);
             }
             break;
@@ -115,7 +114,7 @@ void StateMachine::handleEvent(const Event& event)
             }
             else if (event.type == EVENT_CARD_READ)
             {
-                firstCardId_ = event.cardId;
+                firstCard_ = event.card;
                 runScenario1();
                 setState(STATE_IDLE, false);
             }
@@ -136,7 +135,7 @@ void StateMachine::handleEvent(const Event& event)
             }
             else if (event.type == EVENT_CARD_READ)
             {
-                secondCardId_ = event.cardId;
+                secondCard_ = event.card;
                 setState(STATE_AFTER_SECOND_CARD, false);
             }
             break;

@@ -1,4 +1,6 @@
 #include <stdint.h>
+#include <Arduino.h>
+#include <card_uid.h>
 
 struct Settings {
     uint8_t player_count;
@@ -6,12 +8,11 @@ struct Settings {
 };
 
 struct Player {
-    // метка карты
+    CardUID card;
     uint32_t balance;
 };
 
 struct SaveData {
     Settings settings;
-    // Здесь максимальное количество игроков
     Player players[12];
 };

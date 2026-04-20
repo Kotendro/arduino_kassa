@@ -2,6 +2,7 @@
 #define EVENT_H
 
 #include <Arduino.h>
+#include <card_uid.h>
 
 enum EventType : uint8_t
 {
@@ -14,7 +15,7 @@ enum EventType : uint8_t
 struct Event
 {
     EventType type = EVENT_NONE;
-    uint32_t cardId = 0;
+    CardUID card;
     int inputValue = 0;
 };
 

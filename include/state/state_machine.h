@@ -3,6 +3,7 @@
 
 #include "event.h"
 #include "state/state_stack.h"
+#include "card_uid.h"
 
 class StateMachine
 {
@@ -10,8 +11,8 @@ private:
     AppState currentState_;
     StateStack stateStack_;
 
-    uint32_t firstCardId_;
-    uint32_t secondCardId_;
+    CardUID firstCard_;
+    CardUID secondCard_;
     int inputValue_;
 
     void enterState(AppState state);
