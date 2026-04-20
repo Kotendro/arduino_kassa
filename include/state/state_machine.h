@@ -31,6 +31,8 @@ public:
 
     void handleEvent(const Event& event);
     void loop();
+
+    AppState getCurrentState() const { return currentState_; }
 };
 
 #endif

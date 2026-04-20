@@ -38,6 +38,59 @@ Event pullEvent()
 {
     Event event;
 
+    // Если мы в режиме ввода с клавиатуры, RFID игнорируем
+    if (stateMachine.getCurrentState() == STATE_INPUTTING)
+    {
+        char key = keypad.getkey();
+        if (key != '\0')
+        {
+            if (key == 'C')
+            {
+                event.type = EVENT_CANCEL;
+                Serial.println("Cancel key pressed");
+                return event;
+            }
+            if ((key >= '0' && key <= '9') || key == ',' || key == '+')
+            {
+                event.type = EVENT_KEY_PRESS;
+                event.key = key;
+                switch (keypad.keyState())
+                {
+                case PRESSED:
+                {
+                    char key = keypad.getkey();
+                    if (key != NO_KEY)
+                    {
+                        Serial << "Pressed: " << key << "\n";
+                    }
+                    break;
+                }
+
+                case HELD:
+                {
+                    char key = keypad.getkey();
+                    if (key != NO_KEY)
+                    {
+                        Serial << "Held: " << key << "\n";
+                    }
+                    break;
+                }
+
+                case RELEASED:
+                    Serial << "Released\n";
+                    break;
+
+                case WAITING:
+                    break;
+                }
+                return event;
+            }
+            // Остальные клавиши ('<', '^', '=') пока игнорируем
+        }
+        return event; // EVENT_NONE
+    }
+
+
     // RFID
     if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial())
     {
