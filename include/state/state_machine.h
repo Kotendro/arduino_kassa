@@ -14,6 +14,7 @@ private:
     CardUID firstCard_;
     CardUID secondCard_;
     int inputValue_;
+    char currentKey_;
 
     void enterState(AppState state);
     void resetContext();

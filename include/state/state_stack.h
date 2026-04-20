@@ -6,6 +6,7 @@
 enum AppState : uint8_t
 {
     STATE_IDLE,
+    STATE_INPUTTING,
     STATE_AFTER_INPUT,
     STATE_AFTER_CARD,
     STATE_AFTER_SECOND_CARD

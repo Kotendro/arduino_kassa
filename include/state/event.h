@@ -9,7 +9,8 @@ enum EventType : uint8_t
     EVENT_NONE,
     EVENT_CARD_READ,
     EVENT_INPUT_READY,
-    EVENT_CANCEL
+    EVENT_CANCEL,
+    EVENT_KEY_PRESS
 };
 
 struct Event
@@ -17,6 +18,7 @@ struct Event
     EventType type = EVENT_NONE;
     CardUID card;
     int inputValue = 0;
+    char key = 0;
 };
 
 #endif
