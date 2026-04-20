@@ -52,8 +52,7 @@ void setup()
 
     // beeper
     beeper.begin();
-
-    beeper.beep(200, 1000);
+    beeper.beep(2000, 50);
 }
 
 void loop()
