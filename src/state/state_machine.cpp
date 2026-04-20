@@ -1,5 +1,24 @@
 #include "state/state_machine.h"
 
+static const char *stateToString(AppState state)
+{
+    switch (state)
+    {
+    case STATE_IDLE:
+        return "IDLE";
+    case STATE_AFTER_INPUT:
+        return "AFTER_INPUT";
+    case STATE_AFTER_CARD:
+        return "AFTER_CARD";
+    case STATE_AFTER_SECOND_CARD:
+        return "AFTER_SECOND_CARD";
+    case STATE_INPUTTING:
+        return "INPUTTING";
+    default:
+        return "UNKNOWN";
+    }
+}
+
 StateMachine::StateMachine()
     : currentState_(STATE_IDLE),
       inputValue_(0),
@@ -35,6 +54,9 @@ void StateMachine::goBack()
 
 void StateMachine::enterState(AppState state)
 {
+    Serial.print("Entering state: ");
+    Serial.println(stateToString(state));
+
     switch (state)
     {
     case STATE_IDLE:
