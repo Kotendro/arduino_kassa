@@ -11,7 +11,7 @@ void Beeper::begin()
     digitalWrite(_pin, LOW);
 }
 
-void Beeper::beep(uint16_t freq, uint16_t duration, uint16_t pause = 0, uint8_t count = 1)
+void Beeper::beep(uint16_t freq, uint16_t duration, uint16_t pause, uint8_t count)
 {
     for (uint8_t i = 0; i < count; i++)
     {
