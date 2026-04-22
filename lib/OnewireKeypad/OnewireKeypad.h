@@ -88,7 +88,7 @@ void OnewireKeypad<T, MAX_KEYS>::errorMSG(const char* msg) {
 
 template <typename T, unsigned MAX_KEYS>
 char OnewireKeypad<T, MAX_KEYS>::getkey() {
-    int pinReading = analogRead(_Pin);
+    uint16_t pinReading = analogRead(_Pin);
     boolean state = pinReading > KP_TOLERANCE;
 
     unsigned long currentMillis = millis();
