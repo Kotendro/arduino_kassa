@@ -10,7 +10,8 @@ enum EventType : uint8_t
     EVENT_CARD_READ,
     EVENT_INPUT_READY,
     EVENT_CANCEL,
-    EVENT_KEY_PRESS
+    EVENT_CONFIRM,
+    EVENT_KEY_PRESS,
 };
 
 struct Event

@@ -28,6 +28,7 @@ public:
 
     void setState(AppState newState, bool pushToStack = true);
     void goBack();
+    void goBackNoEnter();
 
     void handleEvent(const Event& event);
     void loop();

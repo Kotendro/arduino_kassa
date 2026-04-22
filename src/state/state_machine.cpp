@@ -19,6 +19,27 @@ static const char *stateToString(AppState state)
     }
 }
 
+static const char *eventTypeToString(EventType event)
+{
+    switch (event)
+    {
+    case EVENT_NONE:
+        return "NONE";
+    case EVENT_CARD_READ:
+        return "CARD_READ";
+    case EVENT_INPUT_READY:
+        return "INPUT_READY";
+    case EVENT_CANCEL:
+        return "CANCEL";
+    case EVENT_CONFIRM:
+        return "CONFIRM";
+    case EVENT_KEY_PRESS:
+        return "KEY_PRESS";
+    default:
+        return "UNKNOWN";
+    }
+}
+
 StateMachine::StateMachine()
     : currentState_(STATE_IDLE),
       inputValue_(0),
@@ -52,6 +73,18 @@ void StateMachine::goBack()
     }
 }
 
+void StateMachine::goBackNoEnter()
+{
+    if (!stateStack_.isEmpty())
+    {
+        currentState_ = stateStack_.pop();
+    }
+    else
+    {
+        currentState_ = STATE_IDLE;
+    }
+}
+
 void StateMachine::enterState(AppState state)
 {
     Serial.print("Entering state: ");
@@ -65,10 +98,6 @@ void StateMachine::enterState(AppState state)
         break;
 
     case STATE_INPUTTING:
-        // Выводим первую нажатую клавишу
-        Serial.print("Начало ввода. Первая клавиша: '");
-        Serial.print(currentKey_);
-        Serial.println("'");
         break;
 
     case STATE_AFTER_INPUT:
@@ -99,24 +128,30 @@ void StateMachine::runScenario1()
 {
     // Тут логика сценария 1:
     // сначала был ввод, потом карта
+    Serial.println("Scenario 1");
 }
 
 void StateMachine::runScenario2()
 {
     // Тут логика сценария 2:
     // сначала карта, потом ввод
+    Serial.println("Scenario 2");
 }
 
 void StateMachine::runScenario3()
 {
     // Тут логика сценария 3:
     // сначала карта, потом карта, потом ввод
+    Serial.println("Scenario 3");
 }
 
 void StateMachine::handleEvent(const Event &event)
 {
     if (event.type == EVENT_NONE)
         return;
+
+    Serial.print("Event Type: ");
+    Serial.println(eventTypeToString(event.type));
 
     switch (currentState_)
     {
@@ -125,17 +160,17 @@ void StateMachine::handleEvent(const Event &event)
         if (event.type == EVENT_INPUT_READY)
         {
             inputValue_ = event.inputValue;
-            setState(STATE_AFTER_INPUT, false);
+            setState(STATE_AFTER_INPUT, true);
         }
         else if (event.type == EVENT_CARD_READ)
         {
             firstCard_ = event.card;
-            setState(STATE_AFTER_CARD, false);
+            setState(STATE_AFTER_CARD, true);
         }
-        else if (event.type == EVENT_KEY_PRESS) // <-- новое
+        else if (event.type == EVENT_KEY_PRESS)
         {
             currentKey_ = event.key;
-            setState(STATE_INPUTTING, false);
+            setState(STATE_INPUTTING, true);
         }
         break;
     }
@@ -152,7 +187,6 @@ void StateMachine::handleEvent(const Event &event)
             runScenario1();
             setState(STATE_IDLE, false);
         }
-        // KEY_PRESS игнорируется
         break;
     }
 
@@ -171,12 +205,12 @@ void StateMachine::handleEvent(const Event &event)
         else if (event.type == EVENT_CARD_READ)
         {
             secondCard_ = event.card;
-            setState(STATE_AFTER_SECOND_CARD, false);
+            setState(STATE_AFTER_SECOND_CARD, true);
         }
-        else if (event.type == EVENT_KEY_PRESS) // <-- новое
+        else if (event.type == EVENT_KEY_PRESS)
         {
             currentKey_ = event.key;
-            setState(STATE_INPUTTING, false);
+            setState(STATE_INPUTTING, true);
         }
         break;
     }
@@ -193,21 +227,43 @@ void StateMachine::handleEvent(const Event &event)
             runScenario3();
             setState(STATE_IDLE, false);
         }
-        else if (event.type == EVENT_KEY_PRESS) // <-- новое
+        else if (event.type == EVENT_KEY_PRESS)
         {
             currentKey_ = event.key;
-            setState(STATE_INPUTTING, false);
+            setState(STATE_INPUTTING, true);
         }
         break;
     }
 
-    case STATE_INPUTTING: // <-- новое
+    case STATE_INPUTTING:
     {
         if (event.type == EVENT_CANCEL)
         {
-            goBack(); // возврат к предыдущему состоянию
+            goBack();
         }
-        // Остальные события пока игнорируем
+        else if (event.type == EVENT_CONFIRM)
+        {
+            goBackNoEnter();
+            if (currentState_ == STATE_AFTER_CARD)
+            {
+                runScenario2();
+                setState(STATE_IDLE, false);
+            }
+            else if (currentState_ == STATE_AFTER_SECOND_CARD)
+            {
+                runScenario3();
+                setState(STATE_IDLE, false);
+            }
+            else if (currentState_ == STATE_IDLE)
+            {
+                setState(STATE_AFTER_INPUT, false);
+            }
+        }
+        else if (event.type == EVENT_KEY_PRESS)
+        {
+            currentKey_ = event.key;
+            Serial.println(currentKey_);
+        }
         break;
     }
     }

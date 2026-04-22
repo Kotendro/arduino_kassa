@@ -37,59 +37,35 @@ Beeper beeper(BUZZER_PIN);
 Event pullEvent()
 {
     Event event;
+    char key = keypad.getkey();
 
-    // Если мы в режиме ввода с клавиатуры, RFID игнорируем
-    if (stateMachine.getCurrentState() == STATE_INPUTTING)
+    // Keyboard
+    if (key != NO_KEY)
     {
-        char key = keypad.getkey();
-        if (key != '\0')
+        uint8_t state = keypad.keyState();
+        if (state == PRESSED)
+        {
+            if (key >= '0' && key <= '9')
+            {
+                event.type = EVENT_KEY_PRESS;
+                event.key = key;
+                return event;
+            }
+        }
+        else if (state == HELD)
         {
             if (key == 'C')
             {
                 event.type = EVENT_CANCEL;
-                Serial.println("Cancel key pressed");
                 return event;
             }
-            if ((key >= '0' && key <= '9') || key == ',' || key == '+')
+            else if (key == '=')
             {
-                event.type = EVENT_KEY_PRESS;
-                event.key = key;
-                switch (keypad.keyState())
-                {
-                case PRESSED:
-                {
-                    char key = keypad.getkey();
-                    if (key != NO_KEY)
-                    {
-                        Serial << "Pressed: " << key << "\n";
-                    }
-                    break;
-                }
-
-                case HELD:
-                {
-                    char key = keypad.getkey();
-                    if (key != NO_KEY)
-                    {
-                        Serial << "Held: " << key << "\n";
-                    }
-                    break;
-                }
-
-                case RELEASED:
-                    Serial << "Released\n";
-                    break;
-
-                case WAITING:
-                    break;
-                }
+                event.type = EVENT_CONFIRM;
                 return event;
             }
-            // Остальные клавиши ('<', '^', '=') пока игнорируем
         }
-        return event; // EVENT_NONE
     }
-
 
     // RFID
     if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial())
@@ -103,54 +79,6 @@ Event pullEvent()
         rfid.PICC_HaltA();
         rfid.PCD_StopCrypto1();
         return event;
-    }
-
-    // Клавиатура
-    char key = keypad.getkey();
-    if (key != '\0')
-    {
-        if (key == 'C')
-        {
-            event.type = EVENT_CANCEL;
-            Serial.println("Отмена");
-            return event;
-        }
-        // Цифры, запятая или плюс — начало ввода
-        if ((key >= '0' && key <= '9') || key == ',' || key == '+')
-        {
-            event.type = EVENT_KEY_PRESS;
-            event.key = key;
-            switch (keypad.keyState())
-            {
-            case PRESSED:
-            {
-                char key = keypad.getkey();
-                if (key != NO_KEY)
-                {
-                    Serial << "Pressed: " << key << "\n";
-                }
-                break;
-            }
-
-            case HELD:
-            {
-                char key = keypad.getkey();
-                if (key != NO_KEY)
-                {
-                    Serial << "Held: " << key << "\n";
-                }
-                break;
-            }
-
-            case RELEASED:
-                Serial << "Released\n";
-                break;
-
-            case WAITING:
-                break;
-            }
-            return event;
-        }
     }
 
     return event;
