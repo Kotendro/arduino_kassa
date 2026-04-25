@@ -4,6 +4,7 @@
 #include "event.h"
 #include "state/state_stack.h"
 #include "card_uid.h"
+#include "number_input.h"
 
 class StateMachine
 {
@@ -13,7 +14,7 @@ private:
 
     CardUID firstCard_;
     CardUID secondCard_;
-    int inputValue_;
+    NumberInput input_;
     char currentKey_;
 
     void enterState(AppState state);

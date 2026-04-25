@@ -45,15 +45,6 @@ Event pullEvent()
         uint8_t state = keypad.keyState();
         if (state == PRESSED)
         {
-            if (key >= '0' && key <= '9')
-            {
-                event.type = EVENT_KEY_PRESS;
-                event.key = key;
-                return event;
-            }
-        }
-        else if (state == HELD)
-        {
             if (key == 'C')
             {
                 event.type = EVENT_CANCEL;
@@ -62,6 +53,12 @@ Event pullEvent()
             else if (key == '=')
             {
                 event.type = EVENT_CONFIRM;
+                return event;
+            }
+            else 
+            {
+                event.type = EVENT_KEY_PRESS;
+                event.key = key;
                 return event;
             }
         }

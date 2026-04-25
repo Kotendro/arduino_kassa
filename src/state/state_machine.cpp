@@ -27,8 +27,6 @@ static const char *eventTypeToString(EventType event)
         return "NONE";
     case EVENT_CARD_READ:
         return "CARD_READ";
-    case EVENT_INPUT_READY:
-        return "INPUT_READY";
     case EVENT_CANCEL:
         return "CANCEL";
     case EVENT_CONFIRM:
@@ -42,7 +40,6 @@ static const char *eventTypeToString(EventType event)
 
 StateMachine::StateMachine()
     : currentState_(STATE_IDLE),
-      inputValue_(0),
       currentKey_(0)
 {
     enterState(currentState_);
@@ -93,12 +90,36 @@ void StateMachine::enterState(AppState state)
     switch (state)
     {
     case STATE_IDLE:
+    {
         resetContext();
         // показать "Ожидание карты или ввода"
         break;
+    }
 
     case STATE_INPUTTING:
+    {
+        // Ввод символа
+        if (
+            (currentKey_ >= '0' && currentKey_ <= '9') ||
+            (currentKey_ == ',')
+        )
+        {
+            input_.addChar(currentKey_);
+        }
+        // Удаление символа
+        else if (currentKey_ == '<')
+        {
+            input_.delChar();
+        }
+        // Возведение в степень
+        else if (currentKey_ == '^')
+        {
+            input_.nextKiloPower();
+        }
+
+        input_.printToSerial();
         break;
+    }
 
     case STATE_AFTER_INPUT:
         // показать "Ожидание карты или отмены"
@@ -119,7 +140,7 @@ void StateMachine::resetContext()
     firstCard_.clear();
     secondCard_.clear();
 
-    inputValue_ = 0;
+    input_.clear();
     currentKey_ = 0;
     stateStack_.reset();
 }
@@ -157,12 +178,7 @@ void StateMachine::handleEvent(const Event &event)
     {
     case STATE_IDLE:
     {
-        if (event.type == EVENT_INPUT_READY)
-        {
-            inputValue_ = event.inputValue;
-            setState(STATE_AFTER_INPUT, true);
-        }
-        else if (event.type == EVENT_CARD_READ)
+        if (event.type == EVENT_CARD_READ)
         {
             firstCard_ = event.card;
             setState(STATE_AFTER_CARD, true);
@@ -196,12 +212,6 @@ void StateMachine::handleEvent(const Event &event)
         {
             setState(STATE_IDLE, false);
         }
-        else if (event.type == EVENT_INPUT_READY)
-        {
-            inputValue_ = event.inputValue;
-            runScenario2();
-            setState(STATE_IDLE, false);
-        }
         else if (event.type == EVENT_CARD_READ)
         {
             secondCard_ = event.card;
@@ -221,12 +231,6 @@ void StateMachine::handleEvent(const Event &event)
         {
             setState(STATE_IDLE, false);
         }
-        else if (event.type == EVENT_INPUT_READY)
-        {
-            inputValue_ = event.inputValue;
-            runScenario3();
-            setState(STATE_IDLE, false);
-        }
         else if (event.type == EVENT_KEY_PRESS)
         {
             currentKey_ = event.key;
@@ -239,10 +243,19 @@ void StateMachine::handleEvent(const Event &event)
     {
         if (event.type == EVENT_CANCEL)
         {
-            goBack();
+            // если экран не пустой, просто очищаем и не откатываемся
+            if (input_.isEmpty())
+            {
+                goBack();
+                return;
+            }
+            input_.clear();
         }
         else if (event.type == EVENT_CONFIRM)
         {
+            if (input_.isEmpty())
+                return;
+
             goBackNoEnter();
             if (currentState_ == STATE_AFTER_CARD)
             {
@@ -262,7 +275,28 @@ void StateMachine::handleEvent(const Event &event)
         else if (event.type == EVENT_KEY_PRESS)
         {
             currentKey_ = event.key;
-            Serial.println(currentKey_);
+
+            // Ввод символа
+            if (
+                (currentKey_ >= '0' && currentKey_ <= '9') ||
+                (currentKey_ == ',')
+            )
+            {
+                input_.addChar(currentKey_);
+
+            }
+            // Удаление символа
+            else if (currentKey_ == '<')
+            {
+                input_.delChar();
+            }
+            // Возведение в степень
+            else if (currentKey_ == '^')
+            {
+                input_.nextKiloPower();
+            }
+
+            input_.printToSerial();
         }
         break;
     }

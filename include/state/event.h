@@ -8,7 +8,6 @@ enum EventType : uint8_t
 {
     EVENT_NONE,
     EVENT_CARD_READ,
-    EVENT_INPUT_READY,
     EVENT_CANCEL,
     EVENT_CONFIRM,
     EVENT_KEY_PRESS,
