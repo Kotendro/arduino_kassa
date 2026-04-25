@@ -2,29 +2,29 @@
 
 void CardUID::clear()
 {
-    size = 0;
+    size_ = 0;
 
-    for (byte i = 0; i < 10; i++)
+    for (byte i = 0; i < MAX_LEN; i++)
     {
-        bytes[i] = 0;
+        bytes_[i] = 0;
     }
 }
 
 bool CardUID::isEmpty() const
 {
-    return size == 0;
+    return size_ == 0;
 }
 
 void CardUID::printToSerial() const
 {
-    for (byte i = 0; i < size; i++)
+    for (byte i = 0; i < size_; i++)
     {
-        if (bytes[i] < 0x10)
+        if (bytes_[i] < 0x10)
             Serial.print("0");
 
-        Serial.print(bytes[i], HEX);
+        Serial.print(bytes_[i], HEX);
 
-        if (i < size - 1)
+        if (i < size_ - 1)
             Serial.print(":");
     }
 
@@ -33,15 +33,15 @@ void CardUID::printToSerial() const
 
 void CardUID::copyFrom(const MFRC522::Uid &uid)
 {
-    size = uid.size;
+    size_ = uid.size;
 
     for (byte i = 0; i < uid.size; i++)
     {
-        bytes[i] = uid.uidByte[i];
+        bytes_[i] = uid.uidByte[i];
     }
 
-    for (byte i = uid.size; i < 10; i++)
+    for (byte i = uid.size; i < MAX_LEN; i++)
     {
-        bytes[i] = 0;
+        bytes_[i] = 0;
     }
 }
