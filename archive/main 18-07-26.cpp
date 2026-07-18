@@ -1,5 +1,3 @@
-// Оснавная программа устройства
-
 #include <Arduino.h>
 #include <SPI.h>
 #include <MFRC522.h>
@@ -10,26 +8,61 @@
 // Библиотеки для LCD и клавиатуры
 #define _LCD_TYPE 1
 #include <LCD_1602_RUS_ALL.h>
-#include "I2CKeyPad.h"
+#include <OnewireKeypad.h>
 
 // Пины и конфигурация
 #define BUZZER_PIN 6
 #define SS_PIN 10
 #define RST_PIN 9
 #define LCD_ADDR 0x27
-#define KEYPAD_ADDRESS 0x38
+
+// Клавиатура
+char KEYS[] = {
+    'C', '<', '^', '=',
+    '9', '6', '3', ',',
+    '8', '5', '2', '0',
+    '7', '4', '1', '+'};
+
+uint16_t ADC_THRESHOLDS[] = {
+    767, 426, 299, 217,
+    165, 141, 124, 106,
+    92, 85, 78, 71,
+    64, 60, 57, 53};
 
 MFRC522 rfid(SS_PIN, RST_PIN);
 StateMachine stateMachine;
-I2CKeyPad keyPad(KEYPAD_ADDRESS);
+OnewireKeypad<Print, 16> keypad(Serial, KEYS, ADC_THRESHOLDS, 4, 4, A1);
 Beeper beeper(BUZZER_PIN);
 
 Event pullEvent()
 {
     Event event;
+    char key = keypad.getkey();
 
-    // Клавиатура
-    // Тут нужен код, пример в test_4x4_PCF8574.cpp
+    // Keyboard
+    if (key != NO_KEY)
+    {
+        uint8_t state = keypad.keyState();
+        if (state == PRESSED)
+        {
+            if (key == 'C')
+            {
+                event.type = EVENT_CANCEL;
+                return event;
+            }
+            else if (key == '=')
+            {
+                event.type = EVENT_CONFIRM;
+                return event;
+            }
+            else 
+            {
+                event.type = EVENT_KEY_PRESS;
+                event.key = key;
+                return event;
+            }
+        }
+    }
 
     // RFID
     if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial())

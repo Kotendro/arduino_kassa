@@ -1,3 +1,5 @@
+// Программа отладки клавиатуры 4х4, с поределением клавиш через сопротивление
+
 #include <Arduino.h>
 #define _LCD_TYPE 1
 #include <LCD_1602_RUS_ALL.h>
