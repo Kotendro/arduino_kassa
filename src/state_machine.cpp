@@ -1,6 +1,11 @@
 #include "state_machine.h"
 #include "types.h"
 
+/* 
+* DEBUG
+*
+* Превращает enum State в строку.
+*/
 static const char* stateToString(State state)
 {
     switch (state)
@@ -14,6 +19,11 @@ static const char* stateToString(State state)
     }
 }
 
+/* 
+* DEBUG
+*
+* Превращает enum Event в строку.
+*/
 static const char* eventTypeToString(EventType event)
 {
     switch (event)
@@ -32,18 +42,24 @@ StateMachine::StateMachine()
     enterState(currentState_);
 }
 
-void StateMachine::setState(State newState, bool pushToStack)
+
+/* 
+* Выполняет переход в новое состояние с сохранением истории.
+* Текущее состояние помещается в стек (prevStateStack_), что позволяет 
+* в дальнейшем вернуться назад.
+*/
+void StateMachine::setState(State newState)
 {
-    if (pushToStack)
-    {
-        prevStateStack_.push(currentState_);
-    }
+    prevStateStack_.push(currentState_);
 
     currentState_ = newState;
     enterState(currentState_);
 }
 
-void StateMachine::goBack()
+/* 
+* Откат в предыдущее состояние.
+*/
+void StateMachine::intoPrevState()
 {
     if (!prevStateStack_.empty())
     {
@@ -57,18 +73,9 @@ void StateMachine::goBack()
     }
 }
 
-void StateMachine::goBackNoEnter()
-{
-    if (!prevStateStack_.empty())
-    {
-        prevStateStack_.pop_into(currentState_);
-    }
-    else
-    {
-        currentState_ = State::Idle;
-    }
-}
-
+/* 
+* Единоразовое действие при входе в состояние.
+*/
 void StateMachine::enterState(State state)
 {
     Serial.print("Entering state: ");
@@ -76,52 +83,50 @@ void StateMachine::enterState(State state)
 
     switch (state)
     {
-    case State::Idle:
-    {
-        resetContext();
-        // показать "Ожидание карты или ввода"
-        break;
-    }
-
-  
-    case State::Inputting:  {
-        // Ввод символа
-        if (
-            (currentKey_ >= '0' && currentKey_ <= '9') ||
-            (currentKey_ == ',')
-        )
+        case State::Idle:
         {
-            input_.addChar(currentKey_);
+            resetContext();
+            // показать "Ожидание карты или ввода"
+            break;
         }
-        // Удаление символа
-        else if (currentKey_ == '<')
-        {
-            input_.delChar();
+        case State::Inputting:  {
+            // Ввод символа
+            if (
+                (currentKey_ >= '0' && currentKey_ <= '9') ||
+                (currentKey_ == ',')
+            )
+            {
+                input_.addChar(currentKey_);
+            }
+            // Удаление символа
+            else if (currentKey_ == '<')
+            {
+                input_.delChar();
+            }
+            // Возведение в степень
+            else if (currentKey_ == '^')
+            {
+                input_.nextKiloPower();
+            }
+
+            input_.printToSerial();
+            break;
         }
-        // Возведение в степень
-        else if (currentKey_ == '^')
-        {
-            input_.nextKiloPower();
-        }
-
-        input_.printToSerial();
-        break;
-    }
-
-    case State::AfterInput:
-        // показать "Ожидание карты или отмены"
-        break;
-
-    case State::AfterCard:
-        // показать "Ожидание ввода, карты или отмены"
-        break;
-
-    case State::AfterSecondCard:
-        // показать "Ожидание ввода или отмены"
-        break;
+        case State::AfterInput:
+            // показать "Ожидание карты или отмены"
+            break;
+        case State::AfterCard:
+            // показать "Ожидание ввода, карты или отмены"
+            break;
+        case State::AfterSecondCard:
+            // показать "Ожидание ввода или отмены"
+            break;
     }
 }
 
+/* 
+* Сброс собранных данных.
+*/
 void StateMachine::resetContext()
 {
     firstCard_.clear();
@@ -163,130 +168,130 @@ void StateMachine::handleEvent(const Event &event)
 
     switch (currentState_)
     {
-    case State::Idle:
-    {
-        if (event.type == EventType::CardRead)
+        case State::Idle:
         {
-            firstCard_ = event.card;
-            setState(State::AfterCard, true);
-        }
-        else if (event.type == EventType::KeyPressed)
-        {
-            currentKey_ = event.key;
-            setState(State::Inputting, true);
-        }
-        break;
-    }
-
-    case State::AfterInput:
-    {
-        if (event.type == EventType::Cancel)
-        {
-            setState(State::Idle, false);
-        }
-        else if (event.type == EventType::CardRead)
-        {
-            firstCard_ = event.card;
-            runScenario1();
-            setState(State::Idle, false);
-        }
-        break;
-    }
-
-    case State::AfterCard:
-    {
-        if (event.type == EventType::Cancel)
-        {
-            setState(State::Idle, false);
-        }
-        else if (event.type == EventType::CardRead)
-        {
-            secondCard_ = event.card;
-            setState(State::AfterSecondCard, true);
-        }
-        else if (event.type == EventType::KeyPressed)
-        {
-            currentKey_ = event.key;
-            setState(State::Inputting, true);
-        }
-        break;
-    }
-
-    case State::AfterSecondCard:
-    {
-        if (event.type == EventType::Cancel)
-        {
-            setState(State::Idle, false);
-        }
-        else if (event.type == EventType::KeyPressed)
-        {
-            currentKey_ = event.key;
-            setState(State::Inputting, true);
-        }
-        break;
-    }
-
-    case State::Inputting:
-    {
-        if (event.type == EventType::Cancel)
-        {
-            // если экран не пустой, просто очищаем и не откатываемся
-            if (input_.isEmpty())
+            if (event.type == EventType::CardRead)
             {
-                goBack();
-                return;
+                firstCard_ = event.card;
+                setState(State::AfterCard);
             }
-            input_.clear();
+            else if (event.type == EventType::KeyPressed)
+            {
+                currentKey_ = event.key;
+                setState(State::Inputting);
+            }
+            break;
         }
-        else if (event.type == EventType::Confirm)
+
+        case State::AfterInput:
         {
-            if (input_.isEmpty())
-                return;
-
-            goBackNoEnter();
-            if (currentState_ == State::AfterCard)
+            if (event.type == EventType::Cancel)
             {
-                runScenario2();
-                setState(State::Idle, false);
+                setState(State::Idle);
             }
-            else if (currentState_ == State::AfterSecondCard)
+            else if (event.type == EventType::CardRead)
             {
-                runScenario3();
-                setState(State::Idle, false);
+                firstCard_ = event.card;
+                runScenario1();
+                setState(State::Idle);
             }
-            else if (currentState_ == State::Idle)
-            {
-                setState(State::AfterInput, false);
-            }
+            break;
         }
-        else if (event.type == EventType::KeyPressed)
+
+        case State::AfterCard:
         {
-            currentKey_ = event.key;
-
-            // Ввод символа
-            if (
-                (currentKey_ >= '0' && currentKey_ <= '9') ||
-                (currentKey_ == ',')
-            )
+            if (event.type == EventType::Cancel)
             {
-                input_.addChar(currentKey_);
-
+                setState(State::Idle);
             }
-            // Удаление символа
-            else if (currentKey_ == '<')
+            else if (event.type == EventType::CardRead)
             {
-                input_.delChar();
+                secondCard_ = event.card;
+                setState(State::AfterSecondCard);
             }
-            // Возведение в степень
-            else if (currentKey_ == '^')
+            else if (event.type == EventType::KeyPressed)
             {
-                input_.nextKiloPower();
+                currentKey_ = event.key;
+                setState(State::Inputting);
             }
-
-            input_.printToSerial();
+            break;
         }
-        break;
-    }
+        
+        case State::AfterSecondCard:
+        {
+            if (event.type == EventType::Cancel)
+            {
+                setState(State::Idle);
+            }
+            else if (event.type == EventType::KeyPressed)
+            {
+                currentKey_ = event.key;
+                setState(State::Inputting);
+            }
+            break;
+        }
+
+        case State::Inputting:
+        {
+            if (event.type == EventType::Cancel)
+            {
+                // если экран не пустой, просто очищаем и не откатываемся
+                if (input_.isEmpty())
+                {
+                    intoPrevState();
+                    return;
+                }
+                input_.clear();
+            }
+            else if (event.type == EventType::Confirm)
+            {
+                if (input_.isEmpty())
+                    return;
+
+                const State prevState = prevStateStack_.top();
+                if (prevState == State::AfterCard)
+                {
+                    runScenario2();
+                    setState(State::Idle);
+                }
+                else if (prevState == State::AfterSecondCard)
+                {
+                    runScenario3();
+                    setState(State::Idle);
+                }
+                else if (prevState == State::Idle)
+                {
+                    setState(State::AfterInput);
+                }
+            }
+            else if (event.type == EventType::KeyPressed)
+            {
+                currentKey_ = event.key;
+
+                // Ввод символа
+                if (
+                    (currentKey_ >= '0' && currentKey_ <= '9') ||
+                    (currentKey_ == ',')
+                )
+                {
+                    input_.addChar(currentKey_);
+
+                }
+                // Удаление символа
+                else if (currentKey_ == '<')
+                {
+                    input_.delChar();
+                }
+                // Возведение в степень
+                else if (currentKey_ == '^')
+                {
+                    input_.nextKiloPower();
+                }
+
+                input_.printToSerial();
+            }
+            break;
+        }
     }
 }
 

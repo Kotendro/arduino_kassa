@@ -18,8 +18,7 @@ private:
     void enterState(State state);
     void resetContext();
 
-    void goBack();
-    void goBackNoEnter();
+    void intoPrevState();
 
     void runScenario1();
     void runScenario2();
@@ -28,7 +27,7 @@ private:
 public:
     StateMachine();
 
-    void setState(State newState, bool pushToStack = true);
+    void setState(State newState);
 
     void handleEvent(const Event& event); 
 
