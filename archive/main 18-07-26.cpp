@@ -47,17 +47,17 @@ Event pullEvent()
         {
             if (key == 'C')
             {
-                event.type = EVENT_CANCEL;
+                event.type = EventType::Cancel;
                 return event;
             }
             else if (key == '=')
             {
-                event.type = EVENT_CONFIRM;
+                event.type = EventType::Confirm;
                 return event;
             }
             else 
             {
-                event.type = EVENT_KEY_PRESS;
+                event.type = EventType::KeyPressed;
                 event.key = key;
                 return event;
             }
@@ -67,7 +67,7 @@ Event pullEvent()
     // RFID
     if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial())
     {
-        event.type = EventType::EVENT_CARD_READ;
+        event.type = EventType::EventType::CardRead;
         event.card.copyFrom(rfid.uid);
 
         beeper.beep(2000, 50);

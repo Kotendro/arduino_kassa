@@ -1,4 +1,4 @@
-#include <number_input.h>
+#include <components/number_input.h>
 
 void NumberInput::clear()
 {

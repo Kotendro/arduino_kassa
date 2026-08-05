@@ -1,10 +1,11 @@
-#ifndef NUMBER_INPUT_H
-#define NUMBER_INPUT_H
+#pragma once
 
 #include <Arduino.h>
 
+/* 
+* Cтруктура хранения введенного числа (без вывода на экран) 
+*/
 struct NumberInput
-// Структура хранения введенного числа
 {
     static constexpr uint8_t MAX_LEN = 16;
 
@@ -20,6 +21,3 @@ struct NumberInput
     void delChar(); // Удаляем символ, запятую
     void printToSerial() const;
 };
-
-
-#endif

@@ -1,16 +1,13 @@
-// Основная программа устройства
-
 #include <Arduino.h>
 #include <SPI.h>
 #include <MFRC522.h>
 #include <Wire.h>
-#include <Beeper.h>
-#include <state/state_machine.h>
 
-// Библиотеки для LCD и клавиатуры
 #define _LCD_TYPE 1
 #include <LCD_1602_RUS_ALL.h>
-#include "I2CKeyPad.h"
+
+#include "types.h"
+#include "state_machine.h"
 
 // Пины и конфигурация
 #define BUZZER_PIN 6
@@ -21,7 +18,6 @@
 
 MFRC522 rfid(SS_PIN, RST_PIN);
 StateMachine stateMachine;
-I2CKeyPad keyPad(KEYPAD_ADDRESS);
 Beeper beeper(BUZZER_PIN);
 
 Event pullEvent()
@@ -34,7 +30,7 @@ Event pullEvent()
     // RFID
     if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial())
     {
-        event.type = EventType::EVENT_CARD_READ;
+        event.type = EventType::CardRead;
         event.card.copyFrom(rfid.uid);
 
         beeper.beep(2000, 50);

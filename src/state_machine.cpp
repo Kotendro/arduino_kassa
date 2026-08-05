@@ -1,55 +1,42 @@
-#include "state/state_machine.h"
+#include "state_machine.h"
+#include "types.h"
 
-static const char *stateToString(AppState state)
+static const char* stateToString(State state)
 {
     switch (state)
     {
-    case STATE_IDLE:
-        return "IDLE";
-    case STATE_AFTER_INPUT:
-        return "AFTER_INPUT";
-    case STATE_AFTER_CARD:
-        return "AFTER_CARD";
-    case STATE_AFTER_SECOND_CARD:
-        return "AFTER_SECOND_CARD";
-    case STATE_INPUTTING:
-        return "INPUTTING";
-    default:
-        return "UNKNOWN";
+        case State::Idle : return "IDLE";
+        case State::AfterInput : return "AFTER_INPUT";
+        case State::AfterCard : return "AFTER_CARD";
+        case State::AfterSecondCard : return "AFTER_SECOND_CARD";
+        case State::Inputting : return "INPUTTING";
+        default: return "UNKNOWN";
     }
 }
 
-static const char *eventTypeToString(EventType event)
+static const char* eventTypeToString(EventType event)
 {
     switch (event)
     {
-    case EVENT_NONE:
-        return "NONE";
-    case EVENT_CARD_READ:
-        return "CARD_READ";
-    case EVENT_CANCEL:
-        return "CANCEL";
-    case EVENT_CONFIRM:
-        return "CONFIRM";
-    case EVENT_KEY_PRESS:
-        return "KEY_PRESS";
-    default:
-        return "UNKNOWN";
+        case EventType::None : return "NONE";
+        case EventType::CardRead : return "CARD_READ";
+        case EventType::Cancel : return "CANCEL";
+        case EventType::Confirm : return "CONFIRM";
+        case EventType::KeyPressed : return "KEY_PRESS";
+        default: return "UNKNOWN";
     }
 }
 
 StateMachine::StateMachine()
-    : currentState_(STATE_IDLE),
-      currentKey_(0)
 {
     enterState(currentState_);
 }
 
-void StateMachine::setState(AppState newState, bool pushToStack)
+void StateMachine::setState(State newState, bool pushToStack)
 {
     if (pushToStack)
     {
-        stateStack_.push(currentState_);
+        prevStateStack_.push(currentState_);
     }
 
     currentState_ = newState;
@@ -58,46 +45,46 @@ void StateMachine::setState(AppState newState, bool pushToStack)
 
 void StateMachine::goBack()
 {
-    if (!stateStack_.isEmpty())
+    if (!prevStateStack_.empty())
     {
-        currentState_ = stateStack_.pop();
+        prevStateStack_.pop_into(currentState_);
         enterState(currentState_);
     }
     else
     {
-        currentState_ = STATE_IDLE;
+        currentState_ = State::Idle;
         enterState(currentState_);
     }
 }
 
 void StateMachine::goBackNoEnter()
 {
-    if (!stateStack_.isEmpty())
+    if (!prevStateStack_.empty())
     {
-        currentState_ = stateStack_.pop();
+        prevStateStack_.pop_into(currentState_);
     }
     else
     {
-        currentState_ = STATE_IDLE;
+        currentState_ = State::Idle;
     }
 }
 
-void StateMachine::enterState(AppState state)
+void StateMachine::enterState(State state)
 {
     Serial.print("Entering state: ");
     Serial.println(stateToString(state));
 
     switch (state)
     {
-    case STATE_IDLE:
+    case State::Idle:
     {
         resetContext();
         // показать "Ожидание карты или ввода"
         break;
     }
 
-    case STATE_INPUTTING:
-    {
+  
+    case State::Inputting:  {
         // Ввод символа
         if (
             (currentKey_ >= '0' && currentKey_ <= '9') ||
@@ -121,15 +108,15 @@ void StateMachine::enterState(AppState state)
         break;
     }
 
-    case STATE_AFTER_INPUT:
+    case State::AfterInput:
         // показать "Ожидание карты или отмены"
         break;
 
-    case STATE_AFTER_CARD:
+    case State::AfterCard:
         // показать "Ожидание ввода, карты или отмены"
         break;
 
-    case STATE_AFTER_SECOND_CARD:
+    case State::AfterSecondCard:
         // показать "Ожидание ввода или отмены"
         break;
     }
@@ -142,7 +129,7 @@ void StateMachine::resetContext()
 
     input_.clear();
     currentKey_ = 0;
-    stateStack_.reset();
+    prevStateStack_.clear();
 }
 
 void StateMachine::runScenario1()
@@ -168,7 +155,7 @@ void StateMachine::runScenario3()
 
 void StateMachine::handleEvent(const Event &event)
 {
-    if (event.type == EVENT_NONE)
+    if (event.type == EventType::None)
         return;
 
     Serial.print("Event Type: ");
@@ -176,72 +163,72 @@ void StateMachine::handleEvent(const Event &event)
 
     switch (currentState_)
     {
-    case STATE_IDLE:
+    case State::Idle:
     {
-        if (event.type == EVENT_CARD_READ)
+        if (event.type == EventType::CardRead)
         {
             firstCard_ = event.card;
-            setState(STATE_AFTER_CARD, true);
+            setState(State::AfterCard, true);
         }
-        else if (event.type == EVENT_KEY_PRESS)
+        else if (event.type == EventType::KeyPressed)
         {
             currentKey_ = event.key;
-            setState(STATE_INPUTTING, true);
+            setState(State::Inputting, true);
         }
         break;
     }
 
-    case STATE_AFTER_INPUT:
+    case State::AfterInput:
     {
-        if (event.type == EVENT_CANCEL)
+        if (event.type == EventType::Cancel)
         {
-            setState(STATE_IDLE, false);
+            setState(State::Idle, false);
         }
-        else if (event.type == EVENT_CARD_READ)
+        else if (event.type == EventType::CardRead)
         {
             firstCard_ = event.card;
             runScenario1();
-            setState(STATE_IDLE, false);
+            setState(State::Idle, false);
         }
         break;
     }
 
-    case STATE_AFTER_CARD:
+    case State::AfterCard:
     {
-        if (event.type == EVENT_CANCEL)
+        if (event.type == EventType::Cancel)
         {
-            setState(STATE_IDLE, false);
+            setState(State::Idle, false);
         }
-        else if (event.type == EVENT_CARD_READ)
+        else if (event.type == EventType::CardRead)
         {
             secondCard_ = event.card;
-            setState(STATE_AFTER_SECOND_CARD, true);
+            setState(State::AfterSecondCard, true);
         }
-        else if (event.type == EVENT_KEY_PRESS)
+        else if (event.type == EventType::KeyPressed)
         {
             currentKey_ = event.key;
-            setState(STATE_INPUTTING, true);
+            setState(State::Inputting, true);
         }
         break;
     }
 
-    case STATE_AFTER_SECOND_CARD:
+    case State::AfterSecondCard:
     {
-        if (event.type == EVENT_CANCEL)
+        if (event.type == EventType::Cancel)
         {
-            setState(STATE_IDLE, false);
+            setState(State::Idle, false);
         }
-        else if (event.type == EVENT_KEY_PRESS)
+        else if (event.type == EventType::KeyPressed)
         {
             currentKey_ = event.key;
-            setState(STATE_INPUTTING, true);
+            setState(State::Inputting, true);
         }
         break;
     }
 
-    case STATE_INPUTTING:
+    case State::Inputting:
     {
-        if (event.type == EVENT_CANCEL)
+        if (event.type == EventType::Cancel)
         {
             // если экран не пустой, просто очищаем и не откатываемся
             if (input_.isEmpty())
@@ -251,28 +238,28 @@ void StateMachine::handleEvent(const Event &event)
             }
             input_.clear();
         }
-        else if (event.type == EVENT_CONFIRM)
+        else if (event.type == EventType::Confirm)
         {
             if (input_.isEmpty())
                 return;
 
             goBackNoEnter();
-            if (currentState_ == STATE_AFTER_CARD)
+            if (currentState_ == State::AfterCard)
             {
                 runScenario2();
-                setState(STATE_IDLE, false);
+                setState(State::Idle, false);
             }
-            else if (currentState_ == STATE_AFTER_SECOND_CARD)
+            else if (currentState_ == State::AfterSecondCard)
             {
                 runScenario3();
-                setState(STATE_IDLE, false);
+                setState(State::Idle, false);
             }
-            else if (currentState_ == STATE_IDLE)
+            else if (currentState_ == State::Idle)
             {
-                setState(STATE_AFTER_INPUT, false);
+                setState(State::AfterInput, false);
             }
         }
-        else if (event.type == EVENT_KEY_PRESS)
+        else if (event.type == EventType::KeyPressed)
         {
             currentKey_ = event.key;
 
@@ -303,4 +290,3 @@ void StateMachine::handleEvent(const Event &event)
     }
 }
 
-void StateMachine::loop() {}

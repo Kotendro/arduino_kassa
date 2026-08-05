@@ -1,11 +1,12 @@
-#ifndef CARD_UID_H
-#define CARD_UID_H
+#pragma once
 
 #include <Arduino.h>
 #include <MFRC522.h>
 
+/* 
+* Структура хранения RFID карточки
+*/
 struct CardUID
-// Структура хранения RFID карточки (или чего другого)
 {
     static constexpr uint8_t MAX_LEN = 10;
 
@@ -17,5 +18,3 @@ struct CardUID
     void printToSerial() const;
     void copyFrom(const MFRC522::Uid &uid);
 };
-
-#endif
