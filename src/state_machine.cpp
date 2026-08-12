@@ -187,7 +187,7 @@ void StateMachine::handleEvent(const Event &event)
         {
             if (event.type == EventType::Cancel)
             {
-                setState(State::Idle);
+                intoPrevState();
             }
             else if (event.type == EventType::CardRead)
             {
@@ -202,7 +202,7 @@ void StateMachine::handleEvent(const Event &event)
         {
             if (event.type == EventType::Cancel)
             {
-                setState(State::Idle);
+                intoPrevState();
             }
             else if (event.type == EventType::CardRead)
             {
@@ -221,7 +221,7 @@ void StateMachine::handleEvent(const Event &event)
         {
             if (event.type == EventType::Cancel)
             {
-                setState(State::Idle);
+                intoPrevState();
             }
             else if (event.type == EventType::KeyPressed)
             {

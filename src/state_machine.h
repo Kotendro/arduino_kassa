@@ -2,7 +2,7 @@
 
 #include <etl/stack.h>
 #include "types.h"
-#include "components.h"
+#include "components/number_input.h"
 
 class StateMachine
 {

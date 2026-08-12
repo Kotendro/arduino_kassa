@@ -16,6 +16,5 @@ struct Event
 {
     EventType type = EventType::None;
     CardUID card;
-    int inputValue = 0;
     char key = 0;
 };
