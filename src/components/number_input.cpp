@@ -6,6 +6,7 @@ void NumberInput::clear()
     chars_[0] = '\0';
     comma_ = false;
     kiloPower_ = 0;
+    reverseDirection = false;
 }
 
 bool NumberInput::isEmpty() const
@@ -13,9 +14,16 @@ bool NumberInput::isEmpty() const
     return len_ == 0;
 }
 
+/*
+* Добавляем символ в chars_.
+*
+* Искоючает возможность:
+* - Первого 0;
+* - Второй запятой.
+*/
 bool NumberInput::addChar(char c)
 {
-    if (len_ >= MAX_LEN) return false;
+    if (len_ >= MAX_LEN-1) return false; // учитываем элемент '\0'
 
     if (c == '0')
     {
@@ -57,6 +65,13 @@ bool NumberInput::addChar(char c)
     return false;
 }
 
+/*
+* Меняет текущею степень на следующую по списку:
+* 0 -> 1 -> 2 -> 0 -> ...
+*
+* Данные степени соответствуют умножению на:
+* 10^0 -> 10^3 -> 10^6 -> 10^0 -> ...
+*/
 void NumberInput::nextKiloPower()
 {
     kiloPower_++;
@@ -66,6 +81,14 @@ void NumberInput::nextKiloPower()
     }
 }
 
+void NumberInput::switchDirection()
+{
+    reverseDirection = !reverseDirection;
+}
+
+/*
+* Удаляем символ из chars_.
+*/
 void NumberInput::delChar()
 {
     if (len_ == 0) return;
@@ -79,21 +102,41 @@ void NumberInput::delChar()
     chars_[len_] = '\0';
 }
 
+/*
+* DEBUG
+*
+* Вывод текущего резултата в консоль.
+* Учитывает степень
+*/
 void NumberInput::printToSerial() const
 {
-
     if (len_ == 0) {
-        Serial.print("None");
-    } else {
-        Serial.print(chars_);
+        Serial.println("None");
+        return;
     }
 
-    if (kiloPower_ == 1) {
-        Serial.print('T');
-    }
-    else if (kiloPower_ == 2) {
-        Serial.print('M');
-    }
+    if (!reverseDirection) Serial.print("->");
+    else Serial.print("<-");
+
+    Serial.print(chars_);
+
+    if (kiloPower_ == 1) Serial.print('T');
+    else if (kiloPower_ == 2) Serial.print('M');
 
     Serial.println();
+}
+
+/*
+* Исходя из полученной клавиши, решает что делать:
+* - при '<' - удалить;
+* - при '^' - возвести в степень;
+* - при '+' - поменять направление;
+* - в остальных случаях добавить символ.
+*/
+void NumberInput::enterKey(char key)
+{
+    if ((key >= '0' && key <= '9') || (key == ',')) addChar(key);
+    else if (key == '<') delChar();
+    else if (key == '^') nextKiloPower();
+    else if (key == '+') switchDirection();
 }

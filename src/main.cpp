@@ -12,11 +12,15 @@
 #include "state_machine.h"
 
 MFRC522 rfid(SS_PIN, RST_PIN);
-StateMachine stateMachine;
+
 Beeper beeper(BUZZER_PIN);
+
+StateMachine stateMachine;
 
 Keypad keyPad(KEYPAD_ADDRESS);
 char keys[] = "C987<654^321=,0+NF";
+
+LCD_1602_RUS lcd(LCD_ADDRESS, 16, 2);
 
 Event pullEvent()
 {
@@ -53,7 +57,6 @@ Event pullEvent()
         event.card.copyFrom(rfid.uid);
 
         beeper.beep(2000, 50);
-        event.card.printToSerial();
 
         rfid.PICC_HaltA();
         rfid.PCD_StopCrypto1();
@@ -76,20 +79,28 @@ void setup()
     beeper.begin();
     beeper.beep(2000, 50);
 
-    // KeyPad
+    // Wire
     Wire.begin();
     Wire.setClock(400000);
+
+    // KeyPad
     keyPad.setKeyPadMode(I2C_KEYPAD_4x4);
     if (keyPad.begin() == false)
     {
         Serial.println("\nERROR: cannot communicate to keypad.\nPlease reboot.\n");
         while(1);
     }
+
+    // LCD
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0,0);
+    lcd.print("Дарова");
+
 }
 
 void loop()
 {
     Event event = pullEvent();
-
     stateMachine.handleEvent(event);
 }

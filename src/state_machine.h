@@ -10,6 +10,7 @@ private:
     State currentState_ = State::Idle;
     etl::stack<State, 10> prevStateStack_; 
 
+    // Данные, которые мы собираем
     CardUID firstCard_;
     CardUID secondCard_;
     NumberInput input_;

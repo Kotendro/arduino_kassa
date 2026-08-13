@@ -90,24 +90,7 @@ void StateMachine::enterState(State state)
             break;
         }
         case State::Inputting:  {
-            // Ввод символа
-            if (
-                (currentKey_ >= '0' && currentKey_ <= '9') ||
-                (currentKey_ == ',')
-            )
-            {
-                input_.addChar(currentKey_);
-            }
-            // Удаление символа
-            else if (currentKey_ == '<')
-            {
-                input_.delChar();
-            }
-            // Возведение в степень
-            else if (currentKey_ == '^')
-            {
-                input_.nextKiloPower();
-            }
+            input_.enterKey(currentKey_);
 
             input_.printToSerial();
             break;
@@ -116,9 +99,11 @@ void StateMachine::enterState(State state)
             // показать "Ожидание карты или отмены"
             break;
         case State::AfterCard:
+            firstCard_.printToSerial();
             // показать "Ожидание ввода, карты или отмены"
             break;
         case State::AfterSecondCard:
+            secondCard_.printToSerial();
             // показать "Ожидание ввода или отмены"
             break;
     }
@@ -267,27 +252,7 @@ void StateMachine::handleEvent(const Event &event)
             else if (event.type == EventType::KeyPressed)
             {
                 currentKey_ = event.key;
-
-                // Ввод символа
-                if (
-                    (currentKey_ >= '0' && currentKey_ <= '9') ||
-                    (currentKey_ == ',')
-                )
-                {
-                    input_.addChar(currentKey_);
-
-                }
-                // Удаление символа
-                else if (currentKey_ == '<')
-                {
-                    input_.delChar();
-                }
-                // Возведение в степень
-                else if (currentKey_ == '^')
-                {
-                    input_.nextKiloPower();
-                }
-
+                input_.enterKey(currentKey_);
                 input_.printToSerial();
             }
             break;
