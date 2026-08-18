@@ -1,8 +1,11 @@
 #pragma once
 
+#include "config.h"
+
 #include <etl/stack.h>
+#include <LCD_1602_RUS_ALL.h>
+#include "components.h"
 #include "types.h"
-#include "components/number_input.h"
 
 class StateMachine
 {
@@ -11,24 +14,25 @@ private:
     etl::stack<State, 10> prevStateStack_; 
 
     // Данные, которые мы собираем
-    CardUID firstCard_;
-    CardUID secondCard_;
+    Card firstCard_;
+    Card secondCard_;
     NumberInput input_;
     char currentKey_ = 0;
 
+    // Компоненты 
+    LCD_1602_RUS& lcd_;
+    Beeper& beeper_;
+    Bank bank_;
+
+    void setState(State newState);
     void enterState(State state);
+
     void resetContext();
 
     void intoPrevState();
 
-    void runScenario1();
-    void runScenario2();
-    void runScenario3();
-
 public:
-    StateMachine();
-
-    void setState(State newState);
+    StateMachine(LCD_1602_RUS& lcd, Beeper& beeper);
 
     void handleEvent(const Event& event); 
 

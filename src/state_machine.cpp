@@ -1,5 +1,4 @@
 #include "state_machine.h"
-#include "types.h"
 
 /* 
 * DEBUG
@@ -33,11 +32,13 @@ static const char* eventTypeToString(EventType event)
         case EventType::Cancel : return "CANCEL";
         case EventType::Confirm : return "CONFIRM";
         case EventType::KeyPressed : return "KEY_PRESS";
+        case EventType::SwitchDirection : return "SWITCH_DIRECTION";
         default: return "UNKNOWN";
     }
 }
 
-StateMachine::StateMachine()
+StateMachine::StateMachine(LCD_1602_RUS& lcd, Beeper& beeper)
+: lcd_(lcd), beeper_(beeper)
 {
     enterState(currentState_);
 }
@@ -78,7 +79,7 @@ void StateMachine::intoPrevState()
 */
 void StateMachine::enterState(State state)
 {
-    Serial.print("Entering state: ");
+    Serial.print(F("Entering state: "));
     Serial.println(stateToString(state));
 
     switch (state)
@@ -99,11 +100,9 @@ void StateMachine::enterState(State state)
             // показать "Ожидание карты или отмены"
             break;
         case State::AfterCard:
-            firstCard_.printToSerial();
             // показать "Ожидание ввода, карты или отмены"
             break;
         case State::AfterSecondCard:
-            secondCard_.printToSerial();
             // показать "Ожидание ввода или отмены"
             break;
     }
@@ -122,33 +121,12 @@ void StateMachine::resetContext()
     prevStateStack_.clear();
 }
 
-void StateMachine::runScenario1()
-{
-    // Тут логика сценария 1:
-    // сначала был ввод, потом карта
-    Serial.println("Scenario 1");
-}
-
-void StateMachine::runScenario2()
-{
-    // Тут логика сценария 2:
-    // сначала карта, потом ввод
-    Serial.println("Scenario 2");
-}
-
-void StateMachine::runScenario3()
-{
-    // Тут логика сценария 3:
-    // сначала карта, потом карта, потом ввод
-    Serial.println("Scenario 3");
-}
-
 void StateMachine::handleEvent(const Event &event)
 {
     if (event.type == EventType::None)
         return;
 
-    Serial.print("Event Type: ");
+    Serial.print(F("Event Type: "));
     Serial.println(eventTypeToString(event.type));
 
     switch (currentState_)
@@ -157,6 +135,20 @@ void StateMachine::handleEvent(const Event &event)
         {
             if (event.type == EventType::CardRead)
             {
+                Serial.print(F("CardUID: "));
+                event.card.printToSerial();
+
+                const etl::optional<Player&> player = bank_.getOrCreateAcc(event.card);
+                if (!player.has_value()) {
+                    // Сообщаем, что достигнут предел игроков
+                    Serial.println(F("ERROR: Max player limit"));
+                    return;
+                }
+                Serial.print(F("Player "));
+                Serial.print(player.value().id);
+                Serial.print(F(" balance: "));
+                Serial.println(player.value().balance);
+
                 firstCard_ = event.card;
                 setState(State::AfterCard);
             }
@@ -176,8 +168,22 @@ void StateMachine::handleEvent(const Event &event)
             }
             else if (event.type == EventType::CardRead)
             {
+                Serial.print(F("CardUID: "));
+                event.card.printToSerial();
+
+                const etl::optional<Player&> player = bank_.getOrCreateAcc(event.card);
+                if (!player.has_value()) {
+                    // Сообщаем, что достигнут предел игроков
+                    Serial.println(F("ERROR: Max player limit"));
+                    return;
+                }
+                Serial.print(F("Player "));
+                Serial.print(player.value().id);
+                Serial.print(F(" balance: "));
+                Serial.println(player.value().balance);
+
                 firstCard_ = event.card;
-                runScenario1();
+                bank_.runCashierTransaction(firstCard_);
                 setState(State::Idle);
             }
             break;
@@ -191,6 +197,26 @@ void StateMachine::handleEvent(const Event &event)
             }
             else if (event.type == EventType::CardRead)
             {
+                Serial.print(F("CardUID: "));
+                event.card.printToSerial();
+
+                if (firstCard_.packInto64() == event.card.packInto64()) {
+                    // Сообщаем, что одна и та же карта
+                    Serial.println(F("ERROR: The same card"));
+                    return;
+                }
+
+                const etl::optional<Player&> player = bank_.getOrCreateAcc(event.card);
+                if (!player.has_value()) {
+                    // Сообщаем, что достигнут предел игроков
+                    Serial.println(F("ERROR: Max player limit"));
+                    return;
+                }
+                Serial.print(F("Player "));
+                Serial.print(player.value().id);
+                Serial.print(F(" balance: "));
+                Serial.println(player.value().balance);
+
                 secondCard_ = event.card;
                 setState(State::AfterSecondCard);
             }
@@ -228,26 +254,45 @@ void StateMachine::handleEvent(const Event &event)
                 }
                 input_.clear();
             }
+            else if (event.type == EventType::CardRead)
+            {
+                Serial.print(F("CardUID: "));
+                event.card.printToSerial();
+
+                if (firstCard_.size == 0) {
+                    firstCard_ = event.card;
+                } 
+                else if (secondCard_.size == 0) {
+                    if (firstCard_.packInto64() != event.card.packInto64()) {
+                        secondCard_ = event.card;
+                    } else {
+                        Serial.println(F("ERROR: The same card"));
+                    }
+                }
+            }
             else if (event.type == EventType::Confirm)
             {
                 if (input_.isEmpty())
                     return;
 
-                const State prevState = prevStateStack_.top();
-                if (prevState == State::AfterCard)
+                if (firstCard_.size > 0 && secondCard_.size > 0) 
                 {
-                    runScenario2();
+                    bank_.runFPS();
                     setState(State::Idle);
                 }
-                else if (prevState == State::AfterSecondCard)
+                else if (firstCard_.size > 0) 
                 {
-                    runScenario3();
+                    bank_.runCashierTransaction(firstCard_);
                     setState(State::Idle);
                 }
-                else if (prevState == State::Idle)
-                {
+                else {
                     setState(State::AfterInput);
                 }
+            }
+            else if (event.type == EventType::SwitchDirection)
+            {
+                input_.switchDirection();
+                input_.printToSerial();
             }
             else if (event.type == EventType::KeyPressed)
             {
@@ -259,4 +304,3 @@ void StateMachine::handleEvent(const Event &event)
         }
     }
 }
-

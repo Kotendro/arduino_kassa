@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include <types/card_uid.h>
+#include <types/card.h>
 
 enum class EventType : uint8_t
 {
@@ -9,12 +9,13 @@ enum class EventType : uint8_t
     CardRead,
     Cancel,
     Confirm,
-    KeyPressed
+    KeyPressed,
+    SwitchDirection
 };
 
 struct Event
 {
     EventType type = EventType::None;
-    CardUID card;
+    Card card;
     char key = 0;
 };

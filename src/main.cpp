@@ -13,14 +13,14 @@
 
 MFRC522 rfid(SS_PIN, RST_PIN);
 
-Beeper beeper(BUZZER_PIN);
-
-StateMachine stateMachine;
-
 Keypad keyPad(KEYPAD_ADDRESS);
 char keys[] = "C987<654^321=,0+NF";
 
+Beeper beeper(BUZZER_PIN);
+
 LCD_1602_RUS lcd(LCD_ADDRESS, 16, 2);
+
+StateMachine stateMachine(lcd, beeper);
 
 Event pullEvent()
 {
@@ -42,6 +42,9 @@ Event pullEvent()
         case '=':
             event.type = EventType::Confirm;
             break;
+        case '+':
+            event.type = EventType::SwitchDirection;
+            break;
         default:
             event.type = EventType::KeyPressed;
             event.key = key;
@@ -53,10 +56,10 @@ Event pullEvent()
     // RFID
     if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial())
     {
-        event.type = EventType::CardRead;
-        event.card.copyFrom(rfid.uid);
-
         beeper.beep(2000, 50);
+
+        event.type = EventType::CardRead;
+        event.card = rfid.uid;
 
         rfid.PICC_HaltA();
         rfid.PCD_StopCrypto1();
@@ -69,7 +72,7 @@ Event pullEvent()
 void setup()
 {
     Serial.begin(9600);
-    Serial.println("Started");
+    Serial.println(F("Started"));
 
     // RFID
     SPI.begin();
@@ -87,7 +90,7 @@ void setup()
     keyPad.setKeyPadMode(I2C_KEYPAD_4x4);
     if (keyPad.begin() == false)
     {
-        Serial.println("\nERROR: cannot communicate to keypad.\nPlease reboot.\n");
+        Serial.println(F("\nERROR: cannot communicate to keypad.\nPlease reboot.\n"));
         while(1);
     }
 
@@ -96,7 +99,6 @@ void setup()
     lcd.backlight();
     lcd.setCursor(0,0);
     lcd.print("Дарова");
-
 }
 
 void loop()
