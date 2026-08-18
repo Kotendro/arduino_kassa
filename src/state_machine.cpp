@@ -138,7 +138,7 @@ void StateMachine::handleEvent(const Event &event)
                 Serial.print(F("CardUID: "));
                 event.card.printToSerial();
 
-                const etl::optional<Player&> player = bank_.getOrCreateAcc(event.card);
+                const etl::optional<Player> player = bank_.getOrCreateAcc(event.card);
                 if (!player.has_value()) {
                     // Сообщаем, что достигнут предел игроков
                     Serial.println(F("ERROR: Max player limit"));
@@ -147,7 +147,7 @@ void StateMachine::handleEvent(const Event &event)
                 Serial.print(F("Player "));
                 Serial.print(player.value().id);
                 Serial.print(F(" balance: "));
-                Serial.println(player.value().balance);
+                Serial.println((uint32_t)player.value().balance);
 
                 firstCard_ = event.card;
                 setState(State::AfterCard);
@@ -171,7 +171,7 @@ void StateMachine::handleEvent(const Event &event)
                 Serial.print(F("CardUID: "));
                 event.card.printToSerial();
 
-                const etl::optional<Player&> player = bank_.getOrCreateAcc(event.card);
+                const etl::optional<Player> player = bank_.getOrCreateAcc(event.card);
                 if (!player.has_value()) {
                     // Сообщаем, что достигнут предел игроков
                     Serial.println(F("ERROR: Max player limit"));
@@ -180,10 +180,10 @@ void StateMachine::handleEvent(const Event &event)
                 Serial.print(F("Player "));
                 Serial.print(player.value().id);
                 Serial.print(F(" balance: "));
-                Serial.println(player.value().balance);
+                Serial.println((uint32_t)player.value().balance);
 
                 firstCard_ = event.card;
-                bank_.runCashierTransaction(firstCard_);
+                bank_.runCashierTransaction(firstCard_, input_);
                 setState(State::Idle);
             }
             break;
@@ -206,7 +206,7 @@ void StateMachine::handleEvent(const Event &event)
                     return;
                 }
 
-                const etl::optional<Player&> player = bank_.getOrCreateAcc(event.card);
+                const etl::optional<Player> player = bank_.getOrCreateAcc(event.card);
                 if (!player.has_value()) {
                     // Сообщаем, что достигнут предел игроков
                     Serial.println(F("ERROR: Max player limit"));
@@ -215,7 +215,7 @@ void StateMachine::handleEvent(const Event &event)
                 Serial.print(F("Player "));
                 Serial.print(player.value().id);
                 Serial.print(F(" balance: "));
-                Serial.println(player.value().balance);
+                Serial.println((uint32_t)player.value().balance);
 
                 secondCard_ = event.card;
                 setState(State::AfterSecondCard);
@@ -282,7 +282,7 @@ void StateMachine::handleEvent(const Event &event)
                 }
                 else if (firstCard_.size > 0) 
                 {
-                    bank_.runCashierTransaction(firstCard_);
+                    bank_.runCashierTransaction(firstCard_, input_);
                     setState(State::Idle);
                 }
                 else {
