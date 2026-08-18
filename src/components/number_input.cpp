@@ -3,8 +3,8 @@
 void NumberInput::clear()
 {
     len_ = 0;
-    chars_[0] = '\0';
     comma_ = false;
+    decimals_ = 0;
     kiloPower_ = 0;
     reverseDirection = false;
 }
@@ -23,7 +23,7 @@ bool NumberInput::isEmpty() const
 */
 bool NumberInput::addChar(char c)
 {
-    if (len_ >= MAX_LEN-1) return false; // учитываем элемент '\0'
+    if (len_ >= MAX_LEN) return false;
 
     if (c == '0')
     {
@@ -31,7 +31,17 @@ bool NumberInput::addChar(char c)
             return false;
 
         chars_[len_++] = c;
-        chars_[len_] = '\0';
+
+        if (comma_) 
+        {
+            decimals_++;
+            if (decimals_ > 0 && decimals_ <= 3 && kiloPower_ <= 0) {
+                kiloPower_ = 1;
+            } else if (decimals_ > 3 && kiloPower_ <= 1) {
+                kiloPower_ = 2;
+            }
+        }
+
         return true;
     }
 
@@ -43,8 +53,17 @@ bool NumberInput::addChar(char c)
             return true;
         }
 
+        if (comma_) 
+        {
+            decimals_++;
+            if (decimals_ > 0 && decimals_ <= 3 && kiloPower_ <= 0) {
+                kiloPower_ = 1;
+            } else if (decimals_ > 3 && kiloPower_ <= 1) {
+                kiloPower_ = 2;
+            }
+        }
+
         chars_[len_++] = c;
-        chars_[len_] = '\0';
         return true;
     }
 
@@ -58,7 +77,6 @@ bool NumberInput::addChar(char c)
 
         comma_ = true;
         chars_[len_++] = c;
-        chars_[len_] = '\0';
         return true;
     }
 
@@ -77,7 +95,13 @@ void NumberInput::nextKiloPower()
     kiloPower_++;
 
     if (kiloPower_ > 2) {
-        kiloPower_ = 0;
+        if (decimals_ > 0 && decimals_ <= 3) {
+            kiloPower_ = 1;
+        } else if (decimals_ > 3) {
+            kiloPower_ = 2;
+        } else {
+            kiloPower_ = 0;
+        }
     }
 }
 
@@ -97,9 +121,9 @@ void NumberInput::delChar()
 
     if (chars_[len_] == ',') {
         comma_ = false;
+    } else if (comma_) {
+        decimals_--;
     }
-
-    chars_[len_] = '\0';
 }
 
 /*
@@ -111,14 +135,15 @@ void NumberInput::delChar()
 void NumberInput::printToSerial() const
 {
     if (len_ == 0) {
-        Serial.println("None");
+        Serial.println(F("None"));
         return;
     }
 
     if (!reverseDirection) Serial.print("->");
     else Serial.print("<-");
 
-    Serial.print(chars_);
+    for (uint8_t i=0; i<len_; i++)
+        Serial.print(chars_[i]);
 
     if (kiloPower_ == 1) Serial.print('T');
     else if (kiloPower_ == 2) Serial.print('M');
@@ -130,7 +155,6 @@ void NumberInput::printToSerial() const
 * Исходя из полученной клавиши, решает что делать:
 * - при '<' - удалить;
 * - при '^' - возвести в степень;
-* - при '+' - поменять направление;
 * - в остальных случаях добавить символ.
 */
 void NumberInput::enterKey(char key)
@@ -138,5 +162,23 @@ void NumberInput::enterKey(char key)
     if ((key >= '0' && key <= '9') || (key == ',')) addChar(key);
     else if (key == '<') delChar();
     else if (key == '^') nextKiloPower();
-    else if (key == '+') switchDirection();
+}
+
+uint64_t NumberInput::packInto64()
+{
+    uint64_t res = 0;
+
+    for (uint8_t i = 0; i < len_; i++) {
+        if (chars_[i] == ',') continue;
+        res = res * 10 + (chars_[i] - '0');
+    }
+
+    int8_t shift = (kiloPower_ * 3) - decimals_;
+
+    while (shift > 0) {
+        res *= 10;
+        shift--;
+    }
+
+    return res;
 }

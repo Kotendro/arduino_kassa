@@ -8,10 +8,11 @@
 class NumberInput
 {
 private:
-    static constexpr uint8_t MAX_LEN = 8; // max number - 9 999 9999 * M (10^6)
+    static constexpr uint8_t MAX_LEN = 8;
 
-    char chars_[MAX_LEN] = {'\0'};
+    char chars_[MAX_LEN] = {};
     uint8_t len_ = 0;
+    uint8_t decimals_ = 0;
     bool comma_ = false;
     uint8_t kiloPower_ = 0;
 
