@@ -164,7 +164,10 @@ void NumberInput::enterKey(char key)
     else if (key == '^') nextKiloPower();
 }
 
-uint64_t NumberInput::packInto64()
+/*
+* Переводит строковый input_ в число (uint64).
+*/
+uint64_t NumberInput::packInto64() const
 {
     uint64_t res = 0;
 

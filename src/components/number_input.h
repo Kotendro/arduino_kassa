@@ -28,7 +28,7 @@ public:
     void switchDirection();
     void enterKey(char key);
 
-    uint64_t packInto64();
+    uint64_t packInto64() const;
 
     void clear();
     
