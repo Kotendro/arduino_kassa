@@ -4,6 +4,9 @@
 
 #pragma once
 
+// Вывод в Serial
+#define DEBUG_MODE 1
+
 // Beeper
 #define BUZZER_PIN 6
 

@@ -1,5 +1,6 @@
 #include "bank.h"
-    
+#include "debug_logger.h"
+
 /*
 * Создает игрока и возвращает указатель на него.
 */
@@ -36,6 +37,21 @@ etl::optional<Player*> Bank::getOrCreateAcc(const Card& card) {
 }
 
 /*
+* Выдает указатель на объект игрока.
+* Если такого игрока не существует, возвращает nullopt
+*/
+etl::optional<Player*> Bank::getAcc(const Card& card) const {
+    uint64_t key = card.packInto64();
+
+    auto iter = accounts_.find(key);
+    if (iter != accounts_.end()) {
+        return &(iter->second); 
+    }   
+
+    return etl::nullopt;
+}
+
+/*
 * Перевод денежных средств между ЦБ и человеком.
 * Защита от переполнения баланса и от ухода в минус.
 *
@@ -44,7 +60,7 @@ etl::optional<Player*> Bank::getOrCreateAcc(const Card& card) {
 void Bank::runOneSideTransaction(const Card& card, const NumberInput& input) {
     etl::optional<Player*> player = getOrCreateAcc(card);
     if (!player.has_value()) {
-        Serial.println(F("ERROR: player doesn't exist"));
+        DEBUG_ERROR(F("player doesn't exist"));
         return;
     };
 
@@ -91,7 +107,7 @@ void Bank::runTwoSideTransaction(const Card& firstCard, const Card& secondCard, 
     etl::optional<Player*> player1 = getOrCreateAcc(firstCard);
     etl::optional<Player*> player2 = getOrCreateAcc(secondCard);
     if (!player1.has_value() || !player2.has_value()) {
-        Serial.println(F("ERROR: player doesn't exist"));
+        DEBUG_ERROR(F("player doesn't exist"));
         return;
     };
 

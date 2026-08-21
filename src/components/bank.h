@@ -17,6 +17,7 @@ private:
 public:
     etl::optional<Player*> createNewAcc(const Card& card);
     etl::optional<Player*> getOrCreateAcc(const Card& card);
+    etl::optional<Player*> getAcc(const Card& card) const;
 
     void runOneSideTransaction(const Card& card, const NumberInput& input);
     void runTwoSideTransaction(const Card& firstCard, const Card& secondCard, const NumberInput& input);
