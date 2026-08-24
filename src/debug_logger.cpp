@@ -13,6 +13,7 @@ static const char* stateToString(State state)
         case State::AfterCard : return "AFTER_CARD";
         case State::AfterSecondCard : return "AFTER_SECOND_CARD";
         case State::Inputting : return "INPUTTING";
+        case State::AfterTransaction  : return "AFTER TRANSACTION";
         default: return "UNKNOWN";
     }
 }
@@ -58,4 +59,45 @@ void debugError(const __FlashStringHelper* msg)
     Serial.print(F("ERROR: "));
     Serial.println(msg);
     Serial.println();
+}
+
+void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc, TransactionDirection dir)
+{
+    Serial.println(F("================"));
+
+    // Top line
+    if (topAcc == nullptr) {
+        Serial.println();
+    } else {
+        if (dir == TransactionDirection::TopToBottom) Serial.print(F("  "));
+        else Serial.print(F("->"));
+        
+        if (topAcc->type == AccountType::CentralBank) {
+            Serial.println(F("ЦБ : Безлимит"));
+        } else {
+            Serial.print(F("И"));
+            Serial.print(topAcc->id);
+            Serial.print(F(" : "));
+            Serial.println((uint32_t)topAcc->balance);
+        }
+    }
+
+    // Bottom line
+    if (bottomAcc == nullptr) {
+        Serial.println();
+    } else {
+        if (dir == TransactionDirection::TopToBottom) Serial.print(F("->"));
+        else Serial.print(F("  "));
+        
+        if (bottomAcc->type == AccountType::CentralBank) {
+            Serial.println(F("ЦБ : Безлимит"));
+        } else {
+            Serial.print(F("И"));
+            Serial.print(bottomAcc->id);
+            Serial.print(F(" : "));
+            Serial.println((uint32_t)bottomAcc->balance);
+        }
+    }
+    
+    Serial.println(F("================"));
 }

@@ -2,9 +2,9 @@
 #include "debug_logger.h"
 
 /*
-* Создает игрока и возвращает указатель на него.
+* Создает аккаунт игрока и возвращает указатель на него.
 */
-etl::optional<Player*> Bank::createNewAcc(const Card& card) {
+etl::optional<Account*> Bank::createNewAcc(const Card& card) {
     if (accounts_.full()) {
         return etl::nullopt;
     }
@@ -12,7 +12,8 @@ etl::optional<Player*> Bank::createNewAcc(const Card& card) {
     uint8_t id = accounts_.size();
     uint64_t key = card.packInto64();
 
-    auto iter = accounts_.insert({key, Player{id, DEFAULT_START_BALANCE}});
+    // Создаем именно игрока
+    auto iter = accounts_.insert({key, Account{AccountType::Player, id, DEFAULT_START_BALANCE}});
 
     if (iter.second) {
         return &(iter.first->second);
@@ -22,10 +23,10 @@ etl::optional<Player*> Bank::createNewAcc(const Card& card) {
 }
 
 /*
-* Выдает указатель на объект игрока.
-* Если такого игрока не существует, пытается создать его.
+* Выдает указатель на объект счета.
+* Если такого счета не существует, пытается создать его.
 */
-etl::optional<Player*> Bank::getOrCreateAcc(const Card& card) {
+etl::optional<Account*> Bank::getOrCreateAcc(const Card& card) {
     uint64_t key = card.packInto64();
 
     auto iter = accounts_.find(key);
@@ -37,10 +38,10 @@ etl::optional<Player*> Bank::getOrCreateAcc(const Card& card) {
 }
 
 /*
-* Выдает указатель на объект игрока.
-* Если такого игрока не существует, возвращает nullopt
+* Выдает указатель на объект счета.
+* Если не существует, возвращает nullopt.
 */
-etl::optional<Player*> Bank::getAcc(const Card& card) const {
+etl::optional<Account*> Bank::getAcc(const Card& card) {
     uint64_t key = card.packInto64();
 
     auto iter = accounts_.find(key);
@@ -52,97 +53,43 @@ etl::optional<Player*> Bank::getAcc(const Card& card) const {
 }
 
 /*
-* Перевод денежных средств между ЦБ и человеком.
-* Защита от переполнения баланса и от ухода в минус.
-*
-* [1-2 сценарий]
+* Единая транзакция: Отправитель -> Получатель.
+* В зависимости от AccountType, метод сам решает, списывать деньги или нет.
 */
-void Bank::runOneSideTransaction(const Card& card, const NumberInput& input) {
-    etl::optional<Player*> player = getOrCreateAcc(card);
-    if (!player.has_value()) {
-        DEBUG_ERROR(F("player doesn't exist"));
+void Bank::runTransaction(Account* topAcc, Account* bottomAcc, const NumberInput& input, TransactionDirection direction) {
+    // Базовые проверки на null
+    if (topAcc == nullptr || bottomAcc == nullptr) {
+        DEBUG_ERROR(F("Account pointer is null"));
         return;
-    };
-
-    uint64_t amount = input.packInto64();
-    Player* p = player.value();
-
-    if (!input.reverseDirection) {
-        /*
-        * True -> У игрока еще есть место до максимального баланса,
-        * поэтому деньги можно просто добавить.
-        * 
-        * Fasle-> У игрока баланс после пополнение выйдет за максимум,
-        * поэтому просто приравниваем баланс к максимально возможному балансу. 
-        */
-        if (MAX_BALANCE - p->balance > amount) {
-            p->balance += amount;
-        } else {
-            p->balance = MAX_BALANCE;
-        }
-    } else {
-        /*
-        * True -> У игрока после списания баланс выйдет в минус,
-        * поэтому просто приравниваем баланс к 0.
-        * 
-        * False-> У игрока баланс не выйдет в минус попсле списания,
-        * поэтому просто минусуем необходимую сумму
-        */
-        if (p->balance < amount) {
-            p->balance = 0;
-        } else {
-            p->balance -= amount;
-        }
     }
-}
-
-
-/*
-* Перевод денежных средств между 2 людьми.
-* Защита от переполнения баланса и от ухода в минус.
-*
-* [3 сценарий]
-*/
-void Bank::runTwoSideTransaction(const Card& firstCard, const Card& secondCard, const NumberInput& input) {
-    etl::optional<Player*> player1 = getOrCreateAcc(firstCard);
-    etl::optional<Player*> player2 = getOrCreateAcc(secondCard);
-    if (!player1.has_value() || !player2.has_value()) {
-        DEBUG_ERROR(F("player doesn't exist"));
+    
+    if (topAcc->type == AccountType::None || bottomAcc->type == AccountType::None) {
+        DEBUG_ERROR(F("Invalid account type"));
         return;
-    };
-
-    uint64_t amount = input.packInto64();
-
-    Player* pFrom = !input.reverseDirection ? player1.value() : player2.value();
-    Player* pTo   = !input.reverseDirection ? player2.value() : player1.value();
-
-    uint64_t actualAmount = 0; // Сумма, которую получает pTo.
-
-    /*
-    * True -> Баланс отправителя меньше заданного перевода,
-    * поэтому отправляем что можем (actualAmount) и
-    * обнуляем его баланс.
-    * 
-    * False-> Баланс отправителя больше заданного перевода.
-    */
-    if (pFrom->balance < amount) {
-        actualAmount = pFrom->balance;
-        pFrom->balance = 0;
-    } else {
-        actualAmount = amount;
-        pFrom->balance -= amount;
     }
 
-    /*
-    * True -> У игрока еще есть место до максимального баланса,
-    * поэтому деньги можно просто добавить.
-    * 
-    * Fasle-> У игрока баланс после пополнение выйдет за максимум,
-    * поэтому просто приравниваем баланс к максимально возможному балансу. 
-    */
-    if (MAX_BALANCE - pTo->balance > actualAmount) {
-        pTo->balance += actualAmount;
-    } else {
-        pTo->balance = MAX_BALANCE;
+    uint64_t amount = input.packInto64();
+    if (amount == 0) return;
+
+    Account* from = (direction == TransactionDirection::TopToBottom) ? topAcc : bottomAcc;
+    Account* to   = (direction == TransactionDirection::TopToBottom) ? bottomAcc : topAcc;
+
+    uint64_t actualAmount = amount; 
+
+    if (from->type == AccountType::Player) {
+        if (from->balance < amount) {
+            actualAmount = from->balance;
+            from->balance = 0;
+        } else {
+            from->balance -= amount;
+        }
+    }
+
+    if (to->type == AccountType::Player) {
+        if (MAX_BALANCE - to->balance > actualAmount) {
+            to->balance += actualAmount;
+        } else {
+            to->balance = MAX_BALANCE;
+        }
     }
 }

@@ -8,5 +8,6 @@ enum class State : uint8_t
     Inputting,
     AfterInput,
     AfterCard,
-    AfterSecondCard
+    AfterSecondCard,
+    AfterTransaction
 };

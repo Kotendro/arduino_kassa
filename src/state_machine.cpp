@@ -49,7 +49,6 @@ void StateMachine::enterState(State state)
         case State::Idle:
         {
             resetContext();
-            // показать "Ожидание карты или ввода"
             break;
         }
         case State::Inputting:  {
@@ -57,24 +56,57 @@ void StateMachine::enterState(State state)
             break;
         }
         case State::AfterInput:
-            // показать "Ожидание карты или отмены"
-            break;
         case State::AfterCard:
-            // показать "Ожидание ввода, карты или отмены"
-            break;
         case State::AfterSecondCard:
-            // показать "Ожидание ввода или отмены"
+        case State::AfterTransaction:
             break;
     }
 }
 
+
 /* 
-* Сброс собранных данных.
+* Метод сдвига "Очереди". 
+* Новый счет идет наверх, старый верхний падает вниз.
+*/
+void StateMachine::pushAccount(Account* newAcc)
+{
+    if (topAccount_ == &cbAccount_) {
+        topAccount_ = newAcc;
+        bottomAccount_ = &cbAccount_;
+    } 
+    else if (bottomAccount_ == &cbAccount_) {
+        bottomAccount_ = newAcc;
+    } 
+    else {
+        topAccount_ = bottomAccount_;
+        bottomAccount_ = newAcc;
+    }
+}
+
+/* 
+* Метод обратного сдвига "Очереди" (Удаление последней карты).
+*/
+void StateMachine::popAccount()
+{
+    if (bottomAccount_ != &cbAccount_ && bottomAccount_ != nullptr) 
+    {
+        bottomAccount_ = &cbAccount_;
+    }
+    else if (topAccount_ != &cbAccount_) 
+    {
+        topAccount_ = &cbAccount_;
+        bottomAccount_ = nullptr;
+    }
+}
+
+/* 
+* Сброс собранных данных при переходе в Idle.
 */
 void StateMachine::resetContext()
 {
-    firstCard_.clear();
-    secondCard_.clear();
+    topAccount_ = &cbAccount_;
+    bottomAccount_ = nullptr;
+    direction_ = TransactionDirection::TopToBottom;
 
     input_.clear();
     currentKey_ = 0;
@@ -82,9 +114,7 @@ void StateMachine::resetContext()
 }
 
 /*
-* В зависимости от текущего состояния (currentState_)
-* и от пришедшего события (event) 
-* выполняем операцию.
+* Основной обработчик событий
 */
 void StateMachine::handleEvent(const Event &event)
 {
@@ -101,19 +131,23 @@ void StateMachine::handleEvent(const Event &event)
             {
                 DEBUG_CARD(event.card);
 
-                const etl::optional<Player*> player = bank_.getOrCreateAcc(event.card);
-                if (!player.has_value()) {
-                    DEBUG_ERROR(F("Max player limit"));
+                const etl::optional<Account*> optAcc = bank_.getOrCreateAcc(event.card);
+                if (!optAcc.has_value()) {
+                    DEBUG_ERROR(F("Max limit")); 
                     return;
                 }
 
-                firstCard_ = event.card;
+                pushAccount(optAcc.value());
                 setState(State::AfterCard);
             }
             else if (event.type == EventType::KeyPressed)
             {
                 currentKey_ = event.key;
                 setState(State::Inputting);
+            }
+            else if (event.type == EventType::SwitchDirection)
+            {
+                direction_ = toggleDirection(direction_);
             }
             break;
         }
@@ -124,19 +158,24 @@ void StateMachine::handleEvent(const Event &event)
             {
                 intoPrevState();
             }
+            else if (event.type == EventType::SwitchDirection)
+            {
+                direction_ = toggleDirection(direction_);
+            }
             else if (event.type == EventType::CardRead)
             {
                 DEBUG_CARD(event.card);
 
-                const etl::optional<Player*> player = bank_.getOrCreateAcc(event.card);
-                if (!player.has_value()) {
-                    DEBUG_ERROR(F("Max player limit"));
+                const etl::optional<Account*> optAcc = bank_.getOrCreateAcc(event.card);
+                if (!optAcc.has_value()) {
+                    DEBUG_ERROR(F("Max limit"));
                     return;
                 }
 
-                firstCard_ = event.card;
-                bank_.runOneSideTransaction(firstCard_, input_);
-                setState(State::Idle);
+                pushAccount(optAcc.value());
+
+                bank_.runTransaction(topAccount_, bottomAccount_, input_, direction_);
+                setState(State::AfterTransaction);
             }
             break;
         }
@@ -145,24 +184,30 @@ void StateMachine::handleEvent(const Event &event)
         {
             if (event.type == EventType::Cancel)
             {
+                popAccount();
                 intoPrevState();
+            }
+            else if (event.type == EventType::SwitchDirection)
+            {
+                direction_ = toggleDirection(direction_);
             }
             else if (event.type == EventType::CardRead)
             {
                 DEBUG_CARD(event.card);
+                const etl::optional<Account*> optAcc = bank_.getOrCreateAcc(event.card);
+                if (!optAcc.has_value()) {
+                    DEBUG_ERROR(F("Max limit"));
+                    return;
+                }
+                
+                Account* newAcc = optAcc.value();
 
-                if (firstCard_.packInto64() == event.card.packInto64()) {
+                if (topAccount_ == newAcc) {
                     DEBUG_ERROR(F("The same card"));
                     return;
                 }
 
-                const etl::optional<Player*> player = bank_.getOrCreateAcc(event.card);
-                if (!player.has_value()) {
-                    DEBUG_ERROR(F("Max player limit"));
-                    return;
-                }
-
-                secondCard_ = event.card;
+                pushAccount(newAcc);
                 setState(State::AfterSecondCard);
             }
             else if (event.type == EventType::KeyPressed)
@@ -177,7 +222,12 @@ void StateMachine::handleEvent(const Event &event)
         {
             if (event.type == EventType::Cancel)
             {
+                popAccount();
                 intoPrevState();
+            }
+            else if (event.type == EventType::SwitchDirection)
+            {
+                direction_ = toggleDirection(direction_);
             }
             else if (event.type == EventType::KeyPressed)
             {
@@ -191,8 +241,7 @@ void StateMachine::handleEvent(const Event &event)
         {
             if (event.type == EventType::Cancel)
             {
-                if (input_.isEmpty())
-                {
+                if (input_.isEmpty()) {
                     intoPrevState();
                     return;
                 }
@@ -202,49 +251,38 @@ void StateMachine::handleEvent(const Event &event)
             {
                 DEBUG_CARD(event.card);
 
-                if (firstCard_.size == 0) {
-                    const etl::optional<Player*> player = bank_.getOrCreateAcc(event.card);
-                    if (!player.has_value()) {
-                        DEBUG_ERROR(F("Max player limit"));
-                        return;
-                    }
-                    firstCard_ = event.card;
-                } 
-                else if (secondCard_.size == 0) {
-                    if (firstCard_.packInto64() != event.card.packInto64()) {
-                        const etl::optional<Player*> player = bank_.getOrCreateAcc(event.card);
-                        if (!player.has_value()) {
-                            DEBUG_ERROR(F("Max player limit"));
-                            return;
-                        }
-                        secondCard_ = event.card;
-                    } else {
-                        DEBUG_ERROR(F("The same card"));
-                    }
+                const etl::optional<Account*> optAcc = bank_.getOrCreateAcc(event.card);
+                if (!optAcc.has_value()) { 
+                    DEBUG_ERROR(F("Max limit"));
+                    return;
                 }
+                
+                Account* newAcc = optAcc.value();
+
+                if (topAccount_ == newAcc) {
+                    DEBUG_ERROR(F("The same card"));
+                    return;
+                }
+
+                pushAccount(newAcc);
             }
             else if (event.type == EventType::Confirm)
             {
-                if (input_.isEmpty())
-                    return;
+                if (input_.isEmpty()) return;
 
-                if (firstCard_.size > 0 && secondCard_.size > 0) 
+                if (topAccount_ == &cbAccount_ && bottomAccount_ == nullptr) 
                 {
-                    bank_.runTwoSideTransaction(firstCard_, secondCard_, input_);
-                    setState(State::Idle);
-                }
-                else if (firstCard_.size > 0) 
-                {
-                    bank_.runOneSideTransaction(firstCard_, input_);
-                    setState(State::Idle);
-                }
-                else {
                     setState(State::AfterInput);
+                }
+                else
+                {
+                    bank_.runTransaction(topAccount_, bottomAccount_, input_, direction_);
+                    setState(State::AfterTransaction);
                 }
             }
             else if (event.type == EventType::SwitchDirection)
             {
-                input_.switchDirection();
+                direction_ = toggleDirection(direction_);
             }
             else if (event.type == EventType::KeyPressed)
             {
@@ -253,5 +291,23 @@ void StateMachine::handleEvent(const Event &event)
             }
             break;
         }
+
+        case State::AfterTransaction:
+        {
+            if (event.type == EventType::Confirm)
+            {
+                bank_.runTransaction(topAccount_, bottomAccount_, input_, direction_);
+            }
+            else if (event.type == EventType::Cancel)
+            {
+                setState(State::Idle);
+            }
+            else if (event.type == EventType::SwitchDirection)
+            {
+                direction_ = toggleDirection(direction_);
+            }
+            break;    
+        }
     }
+    DEBUG_MONITOR_SERIAL(topAccount_, bottomAccount_, direction_);    
 }

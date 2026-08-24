@@ -6,7 +6,6 @@ void NumberInput::clear()
     comma_ = false;
     decimals_ = 0;
     kiloPower_ = 0;
-    reverseDirection = false;
 }
 
 bool NumberInput::isEmpty() const
@@ -105,11 +104,6 @@ void NumberInput::nextKiloPower()
     }
 }
 
-void NumberInput::switchDirection()
-{
-    reverseDirection = !reverseDirection;
-}
-
 /*
 * Удаляем символ из chars_.
 */
@@ -138,9 +132,6 @@ void NumberInput::printToSerial() const
         Serial.println(F("None"));
         return;
     }
-
-    if (!reverseDirection) Serial.print("->");
-    else Serial.print("<-");
 
     for (uint8_t i=0; i<len_; i++)
         Serial.print(chars_[i]);

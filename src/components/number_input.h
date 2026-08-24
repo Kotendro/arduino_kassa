@@ -21,11 +21,8 @@ private:
     void delChar();
 
 public:
-    bool reverseDirection = false;
-
     bool isEmpty() const;
 
-    void switchDirection();
     void enterKey(char key);
 
     uint64_t packInto64() const;
