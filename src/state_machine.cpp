@@ -51,23 +51,18 @@ void StateMachine::enterState(State state)
             resetContext();
             break;
         }
-        case State::Inputting:  {
+        case State::Inputting:  
+        {
             input_.enterKey(currentKey_);
             break;
         }
-        case State::AfterInput:
-        case State::AfterCard:
-        case State::AfterSecondCard:
         case State::AfterTransaction:
             break;
     }
 }
 
 
-/* 
-* Метод сдвига "Очереди". 
-* Новый счет идет наверх, старый верхний падает вниз.
-*/
+
 void StateMachine::pushAccount(Account* newAcc)
 {
     if (topAccount_ == &cbAccount_) {
@@ -83,9 +78,6 @@ void StateMachine::pushAccount(Account* newAcc)
     }
 }
 
-/* 
-* Метод обратного сдвига "Очереди" (Удаление последней карты).
-*/
 void StateMachine::popAccount()
 {
     if (bottomAccount_ != &cbAccount_ && bottomAccount_ != nullptr) 
@@ -138,7 +130,7 @@ void StateMachine::handleEvent(const Event &event)
                 }
 
                 pushAccount(optAcc.value());
-                setState(State::AfterCard);
+                setState(State::Inputting); // Сразу переходим в активный ввод/управление
             }
             else if (event.type == EventType::KeyPressed)
             {
@@ -148,91 +140,6 @@ void StateMachine::handleEvent(const Event &event)
             else if (event.type == EventType::SwitchDirection)
             {
                 direction_ = toggleDirection(direction_);
-            }
-            break;
-        }
-
-        case State::AfterInput:
-        {
-            if (event.type == EventType::Cancel)
-            {
-                intoPrevState();
-            }
-            else if (event.type == EventType::SwitchDirection)
-            {
-                direction_ = toggleDirection(direction_);
-            }
-            else if (event.type == EventType::CardRead)
-            {
-                DEBUG_CARD(event.card);
-
-                const etl::optional<Account*> optAcc = bank_.getOrCreateAcc(event.card);
-                if (!optAcc.has_value()) {
-                    DEBUG_ERROR(F("Max limit"));
-                    return;
-                }
-
-                pushAccount(optAcc.value());
-
-                bank_.runTransaction(topAccount_, bottomAccount_, input_, direction_);
-                setState(State::AfterTransaction);
-            }
-            break;
-        }
-
-        case State::AfterCard:
-        {
-            if (event.type == EventType::Cancel)
-            {
-                popAccount();
-                intoPrevState();
-            }
-            else if (event.type == EventType::SwitchDirection)
-            {
-                direction_ = toggleDirection(direction_);
-            }
-            else if (event.type == EventType::CardRead)
-            {
-                DEBUG_CARD(event.card);
-                const etl::optional<Account*> optAcc = bank_.getOrCreateAcc(event.card);
-                if (!optAcc.has_value()) {
-                    DEBUG_ERROR(F("Max limit"));
-                    return;
-                }
-                
-                Account* newAcc = optAcc.value();
-
-                if (topAccount_ == newAcc) {
-                    DEBUG_ERROR(F("The same card"));
-                    return;
-                }
-
-                pushAccount(newAcc);
-                setState(State::AfterSecondCard);
-            }
-            else if (event.type == EventType::KeyPressed)
-            {
-                currentKey_ = event.key;
-                setState(State::Inputting);
-            }
-            break;
-        }
-        
-        case State::AfterSecondCard:
-        {
-            if (event.type == EventType::Cancel)
-            {
-                popAccount();
-                intoPrevState();
-            }
-            else if (event.type == EventType::SwitchDirection)
-            {
-                direction_ = toggleDirection(direction_);
-            }
-            else if (event.type == EventType::KeyPressed)
-            {
-                currentKey_ = event.key;
-                setState(State::Inputting);
             }
             break;
         }
@@ -241,11 +148,13 @@ void StateMachine::handleEvent(const Event &event)
         {
             if (event.type == EventType::Cancel)
             {
-                if (input_.isEmpty()) {
+                if (!input_.isEmpty()) {
+                    input_.clear();
+                } else if (topAccount_ != &cbAccount_) {
+                    popAccount();
+                } else {
                     intoPrevState();
-                    return;
                 }
-                input_.clear();
             }
             else if (event.type == EventType::CardRead)
             {
@@ -259,7 +168,7 @@ void StateMachine::handleEvent(const Event &event)
                 
                 Account* newAcc = optAcc.value();
 
-                if (topAccount_ == newAcc) {
+                if (topAccount_ == newAcc || bottomAccount_ == newAcc) {
                     DEBUG_ERROR(F("The same card"));
                     return;
                 }
@@ -269,16 +178,8 @@ void StateMachine::handleEvent(const Event &event)
             else if (event.type == EventType::Confirm)
             {
                 if (input_.isEmpty()) return;
-
-                if (topAccount_ == &cbAccount_ && bottomAccount_ == nullptr) 
-                {
-                    setState(State::AfterInput);
-                }
-                else
-                {
-                    bank_.runTransaction(topAccount_, bottomAccount_, input_, direction_);
-                    setState(State::AfterTransaction);
-                }
+                bank_.runTransaction(topAccount_, bottomAccount_, input_, direction_);
+                setState(State::AfterTransaction);
             }
             else if (event.type == EventType::SwitchDirection)
             {
@@ -292,6 +193,14 @@ void StateMachine::handleEvent(const Event &event)
             break;
         }
 
+        /*
+        * Можно в принципе тоже убрать данное состояний
+        * но будет проблемой выходить из Inputting - надо
+        * будет нажимать Cancel несколько раз.
+        * Зато можно будет продолжать вводить и вставлять карты
+        * Тут тоже можно реализовать данную логику, сделав например 
+        * Cancel сразу возвращающим в отличии от Inputting.
+        */
         case State::AfterTransaction:
         {
             if (event.type == EventType::Confirm)

@@ -9,9 +9,6 @@ static const char* stateToString(State state)
     switch (state)
     {
         case State::Idle : return "IDLE";
-        case State::AfterInput : return "AFTER_INPUT";
-        case State::AfterCard : return "AFTER_CARD";
-        case State::AfterSecondCard : return "AFTER_SECOND_CARD";
         case State::Inputting : return "INPUTTING";
         case State::AfterTransaction  : return "AFTER TRANSACTION";
         default: return "UNKNOWN";
