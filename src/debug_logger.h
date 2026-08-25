@@ -8,7 +8,7 @@ void debugCard(const Card& card);
 void debugEvent(const Event& event);
 void debugState(const State& state);
 void debugError(const __FlashStringHelper* msg);
-void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc, TransactionDirection dir);
+void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc,const NumberInput& input, TransactionDirection dir);
 
 #ifdef DEBUG_MODE
 
@@ -16,8 +16,8 @@ void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc, Transac
 #define DEBUG_EVENT(event)      debugEvent(event)
 #define DEBUG_STATE(state)      debugState(state)
 #define DEBUG_ERROR(msg)        debugError(msg)
-#define DEBUG_MONITOR_SERIAL(topAcc, bottomAcc, dir) \
-    debugMonitorSerial(topAcc, bottomAcc, dir)
+#define DEBUG_MONITOR_SERIAL(topAcc, bottomAcc, input,dir) \
+    debugMonitorSerial(topAcc, bottomAcc,input, dir)
 
 #else
 
@@ -25,6 +25,6 @@ void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc, Transac
 #define DEBUG_EVENT(event)
 #define DEBUG_STATE(state)
 #define DEBUG_ERROR(msg)
-#define DEBUG_MONITOR_SERIAL(topAcc, bottomAcc, dir)
+#define DEBUG_MONITOR_SERIAL(topAcc, bottomAcc, input,dir)
 
 #endif

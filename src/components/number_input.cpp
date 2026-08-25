@@ -142,6 +142,26 @@ void NumberInput::printToSerial() const
     Serial.println();
 }
 
+
+/*
+* DEBUG
+*
+* Вспомогательная функция для форматирования ввода.
+* Длина всегда строго 9 символов (8 цифр/пробелов + 1 символ степени).
+*/
+void NumberInput::printRightAlignedToSerial() const
+{
+    for (uint8_t i = 0; i < 8 - len_; i++) {
+        Serial.print(' ');
+    }
+    for (uint8_t i = 0; i < len_; i++) {
+        Serial.print(chars_[i]);
+    }
+    if (kiloPower_ == 1) Serial.print(F("т"));
+    else if (kiloPower_ == 2) Serial.print(F("м"));
+    else Serial.print(' ');
+}
+
 /*
 * Исходя из полученной клавиши, решает что делать:
 * - при '<' - удалить;

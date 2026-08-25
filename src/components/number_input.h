@@ -30,4 +30,5 @@ public:
     void clear();
     
     void printToSerial() const;
+    void printRightAlignedToSerial() const;
 };

@@ -17,7 +17,7 @@ private:
     Account* topAccount_ = &cbAccount_;
     Account* bottomAccount_ = nullptr; 
     
-    TransactionDirection direction_ = TransactionDirection::TopToBottom;
+    TransactionDirection direction_ = TransactionDirection::BottomToTop;
 
     // Данные, которые мы собираем
     NumberInput input_;

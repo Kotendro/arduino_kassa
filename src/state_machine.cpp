@@ -98,7 +98,7 @@ void StateMachine::resetContext()
 {
     topAccount_ = &cbAccount_;
     bottomAccount_ = nullptr;
-    direction_ = TransactionDirection::TopToBottom;
+    direction_ = TransactionDirection::BottomToTop;
 
     input_.clear();
     currentKey_ = 0;
@@ -260,5 +260,5 @@ void StateMachine::handleEvent(const Event &event)
         break;    
     }
     }
-    DEBUG_MONITOR_SERIAL(topAccount_, bottomAccount_, direction_);    
+    DEBUG_MONITOR_SERIAL(topAccount_, bottomAccount_, input_, direction_);    
 }
