@@ -2,9 +2,12 @@
 #include "debug_logger.h"
 
 StateMachine::StateMachine(LCD_1602_RUS& lcd, Beeper& beeper)
-: monitor_(lcd), beeper_(beeper)
+: monitor_(lcd), beeper_(beeper) {}
+
+void StateMachine::init() 
 {
     enterState(currentState_);
+    monitor_.renderTransactionScreen(topAccount_, bottomAccount_, input_, direction_);
 }
 
 /* 
@@ -139,11 +142,6 @@ void StateMachine::handleEvent(const Event &event)
             setState(State::Inputting);
             break;
         }
-        case EventType::SwitchDirection :
-        {
-            direction_ = toggleDirection(direction_);
-            break;
-        }
         default : {}
         }
 
@@ -159,6 +157,9 @@ void StateMachine::handleEvent(const Event &event)
                 input_.clear();
             } else if (topAccount_ != &cbAccount_) {
                 popAccount();
+                if (bottomAccount_ == nullptr) {
+                    direction_ = TransactionDirection::BottomToTop;
+                }
             } else {
                 intoPrevState();
             }
@@ -193,7 +194,9 @@ void StateMachine::handleEvent(const Event &event)
         }
         case EventType::SwitchDirection :
         {
-            direction_ = toggleDirection(direction_);
+            if (bottomAccount_ != nullptr)
+                direction_ = toggleDirection(direction_);
+
             break;
         }
         case EventType::KeyPressed :

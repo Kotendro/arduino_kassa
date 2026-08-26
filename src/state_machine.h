@@ -40,6 +40,7 @@ private:
 public:
     StateMachine(LCD_1602_RUS& lcd, Beeper& beeper);
 
+    void init();
     void handleEvent(const Event& event); 
 
     State getCurrentState() const { return currentState_; }

@@ -118,6 +118,10 @@ void NumberInput::delChar()
     } else if (comma_) {
         decimals_--;
     }
+
+    if (len_ == 0) {
+        kiloPower_ = 0;
+    }
 }
 
 /*
@@ -132,8 +136,8 @@ void NumberInput::getRightAlignedStr(char* buffer) const
     
     buffer[index] = '\0';
     
-    if (kiloPower_ == 1) strcat(buffer, "т");
-    else if (kiloPower_ == 2) strcat(buffer, "м");
+    if (kiloPower_ == 1) strcat(buffer, "Т");
+    else if (kiloPower_ == 2) strcat(buffer, "М");
     else strcat(buffer, " ");
 }
 
@@ -146,8 +150,10 @@ void NumberInput::getRightAlignedStr(char* buffer) const
 void NumberInput::enterKey(char key)
 {
     if ((key >= '0' && key <= '9') || (key == ',')) addChar(key);
-    else if (key == '<') delChar();
-    else if (key == '^') nextKiloPower();
+    else if (!isEmpty()) {
+        if (key == '<') delChar();
+        else if (key == '^') nextKiloPower();
+    }
 }
 
 /*
