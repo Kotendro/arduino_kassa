@@ -1,7 +1,8 @@
 #include "debug_logger.h"
 
+#ifdef DEBUG_MODE
+
 /* 
-* DEBUG
 * Превращает enum State в строку.
 */
 static const char* stateToString(State state)
@@ -16,7 +17,6 @@ static const char* stateToString(State state)
 }
 
 /* 
-* DEBUG
 * Превращает enum Event в строку.
 */
 static const char* eventTypeToString(EventType event)
@@ -87,24 +87,25 @@ void debugError(const __FlashStringHelper* msg)
 
 void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc, const NumberInput& input, TransactionDirection dir)
 {
-    Serial.println(F("================")); // Ровно 16 символов экрана
+    Serial.println(F("================"));
 
-    // --- ВЕРХНЯЯ СТРОКА ---
+    char inBuf[12]; 
+
+    // Top line
     if (topAcc == nullptr) {
         Serial.println();
     } else {
         bool isSender = (dir == TransactionDirection::TopToBottom);
         
-        // Стрелочка указывает на получателя (не отправителя)
         if (isSender) Serial.print(F("  "));
         else Serial.print(F("->"));
         
         if (topAcc->type == AccountType::CentralBank) {
             Serial.print(F("ЦБ : "));
-            // Если это получатель и ввод не пустой - показываем ввод
+
             if (!isSender && !input.isEmpty()) {
-                input.printRightAlignedToSerial();
-                Serial.println();
+                input.getRightAlignedStr(inBuf);
+                Serial.println(inBuf);
             } else {
                 Serial.println(F("Безлимит ")); 
             }
@@ -113,8 +114,8 @@ void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc, const N
             Serial.print(topAcc->id);
             Serial.print(F(" : "));
             if (!isSender && !input.isEmpty()) {
-                input.printRightAlignedToSerial();
-                Serial.println();
+                input.getRightAlignedStr(inBuf);
+                Serial.println(inBuf);
             } else {
                 printBalanceRightAligned(topAcc->balance);
                 Serial.println();
@@ -122,7 +123,7 @@ void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc, const N
         }
     }
 
-    // --- НИЖНЯЯ СТРОКА ---
+    // Bottom line
     if (bottomAcc == nullptr) {
         Serial.println();
     } else {
@@ -134,8 +135,8 @@ void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc, const N
         if (bottomAcc->type == AccountType::CentralBank) {
             Serial.print(F("ЦБ : "));
             if (!isSender && !input.isEmpty()) {
-                input.printRightAlignedToSerial();
-                Serial.println();
+                input.getRightAlignedStr(inBuf);
+                Serial.println(inBuf);
             } else {
                 Serial.println(F("Безлимит "));
             }
@@ -144,8 +145,8 @@ void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc, const N
             Serial.print(bottomAcc->id);
             Serial.print(F(" : "));
             if (!isSender && !input.isEmpty()) {
-                input.printRightAlignedToSerial();
-                Serial.println();
+                input.getRightAlignedStr(inBuf);
+                Serial.println(inBuf);
             } else {
                 printBalanceRightAligned(bottomAcc->balance);
                 Serial.println();
@@ -155,3 +156,5 @@ void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc, const N
     
     Serial.println(F("================"));
 }
+
+#endif

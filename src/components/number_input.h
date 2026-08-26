@@ -22,13 +22,10 @@ private:
 
 public:
     bool isEmpty() const;
-
+    
     void enterKey(char key);
+    void clear();
 
     uint64_t packInto64() const;
-
-    void clear();
-    
-    void printToSerial() const;
-    void printRightAlignedToSerial() const;
+    void getRightAlignedStr(char* buffer) const;
 };

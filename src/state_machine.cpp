@@ -2,7 +2,7 @@
 #include "debug_logger.h"
 
 StateMachine::StateMachine(LCD_1602_RUS& lcd, Beeper& beeper)
-: lcd_(lcd), beeper_(beeper)
+: monitor_(lcd), beeper_(beeper)
 {
     enterState(currentState_);
 }
@@ -260,5 +260,6 @@ void StateMachine::handleEvent(const Event &event)
         break;    
     }
     }
-    DEBUG_MONITOR_SERIAL(topAccount_, bottomAccount_, input_, direction_);    
+    DEBUG_MONITOR_SERIAL(topAccount_, bottomAccount_, input_, direction_);
+    monitor_.renderTransactionScreen(topAccount_, bottomAccount_, input_, direction_);
 }

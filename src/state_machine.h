@@ -24,7 +24,7 @@ private:
     char currentKey_ = 0;
 
     // Компоненты 
-    LCD_1602_RUS& lcd_;
+    Monitor monitor_;
     Beeper& beeper_;
     Bank bank_;
 

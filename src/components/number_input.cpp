@@ -121,45 +121,20 @@ void NumberInput::delChar()
 }
 
 /*
-* DEBUG
-*
-* Вывод текущего резултата в консоль.
-* Учитывает степень
+* Записывает отформатированный ввод (8 цифр + степень) в переданный буфер
 */
-void NumberInput::printToSerial() const
+void NumberInput::getRightAlignedStr(char* buffer) const
 {
-    if (len_ == 0) {
-        Serial.println(F("None"));
-        return;
-    }
-
-    for (uint8_t i=0; i<len_; i++)
-        Serial.print(chars_[i]);
-
-    if (kiloPower_ == 1) Serial.print('T');
-    else if (kiloPower_ == 2) Serial.print('M');
-
-    Serial.println();
-}
-
-
-/*
-* DEBUG
-*
-* Вспомогательная функция для форматирования ввода.
-* Длина всегда строго 9 символов (8 цифр/пробелов + 1 символ степени).
-*/
-void NumberInput::printRightAlignedToSerial() const
-{
-    for (uint8_t i = 0; i < 8 - len_; i++) {
-        Serial.print(' ');
-    }
-    for (uint8_t i = 0; i < len_; i++) {
-        Serial.print(chars_[i]);
-    }
-    if (kiloPower_ == 1) Serial.print(F("т"));
-    else if (kiloPower_ == 2) Serial.print(F("м"));
-    else Serial.print(' ');
+    uint8_t index = 0;
+    
+    for (uint8_t i = 0; i < 8 - len_; i++) buffer[index++] = ' ';
+    for (uint8_t i = 0; i < len_; i++) buffer[index++] = chars_[i];
+    
+    buffer[index] = '\0';
+    
+    if (kiloPower_ == 1) strcat(buffer, "т");
+    else if (kiloPower_ == 2) strcat(buffer, "м");
+    else strcat(buffer, " ");
 }
 
 /*

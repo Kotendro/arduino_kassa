@@ -4,13 +4,13 @@
 #include "components.h"
 #include "types.h"
 
+#ifdef DEBUG_MODE
+
 void debugCard(const Card& card);
 void debugEvent(const Event& event);
 void debugState(const State& state);
 void debugError(const __FlashStringHelper* msg);
 void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc,const NumberInput& input, TransactionDirection dir);
-
-#ifdef DEBUG_MODE
 
 #define DEBUG_CARD(card)        debugCard(card)
 #define DEBUG_EVENT(event)      debugEvent(event)
