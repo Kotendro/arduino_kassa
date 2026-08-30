@@ -61,6 +61,10 @@ void StateMachine::enterState(State state)
         }
         case State::AfterTransaction:
             break;
+        case State::SystemMessage:
+        {
+            timer_ = millis();
+        }
     }
 }
 
@@ -128,7 +132,9 @@ void StateMachine::handleEvent(const Event &event)
 
             const etl::optional<Account*> optAcc = bank_.getOrCreateAcc(event.card);
             if (!optAcc.has_value()) {
-                DEBUG_ERROR(F("Max limit")); 
+                DEBUG_ERROR(F("Max limit"));
+                monitor_.renderSystemMessage("ДОСТИГНУТО МАКС.\nКОЛ-ВО ИГРОКОВ");
+                setState(State::SystemMessage);
                 return;
             }
 
@@ -172,6 +178,8 @@ void StateMachine::handleEvent(const Event &event)
             const etl::optional<Account*> optAcc = bank_.getOrCreateAcc(event.card);
             if (!optAcc.has_value()) { 
                 DEBUG_ERROR(F("Max limit"));
+                monitor_.renderSystemMessage("ДОСТИГНУТО МАКС.\nКОЛ-ВО ИГРОКОВ");
+                setState(State::SystemMessage);
                 return;
             }
             
@@ -179,6 +187,8 @@ void StateMachine::handleEvent(const Event &event)
 
             if (topAccount_ == newAcc || bottomAccount_ == newAcc) {
                 DEBUG_ERROR(F("The same card"));
+                monitor_.renderSystemMessage("ДАННАЯ КАРТА УЖЕ\nСЧИТАНА");
+                setState(State::SystemMessage);
                 return;
             }
 
@@ -211,14 +221,6 @@ void StateMachine::handleEvent(const Event &event)
         break;
     }
 
-    /*
-    * Можно в принципе тоже убрать данное состояний
-    * но будет проблемой выходить из Inputting - надо
-    * будет нажимать Cancel несколько раз.
-    * Зато можно будет продолжать вводить и вставлять карты
-    * Тут тоже можно реализовать данную логику, сделав например 
-    * Cancel сразу возвращающим в отличии от Inputting.
-    */
     case State::AfterTransaction:
     {
         switch (event.type) {
@@ -244,6 +246,8 @@ void StateMachine::handleEvent(const Event &event)
             const etl::optional<Account*> optAcc = bank_.getOrCreateAcc(event.card);
             if (!optAcc.has_value()) { 
                 DEBUG_ERROR(F("Max limit"));
+                monitor_.renderSystemMessage("ДОСТИГНУТО МАКС.\nКОЛ-ВО ИГРОКОВ");
+                setState(State::SystemMessage);
                 return;
             }
             
@@ -251,6 +255,8 @@ void StateMachine::handleEvent(const Event &event)
 
             if (topAccount_ == newAcc || bottomAccount_ == newAcc) {
                 DEBUG_ERROR(F("The same card"));
+                monitor_.renderSystemMessage("ДАННАЯ КАРТА УЖЕ\nСЧИТАНА");
+                setState(State::SystemMessage);
                 return;
             }
 
@@ -262,7 +268,33 @@ void StateMachine::handleEvent(const Event &event)
 
         break;    
     }
+    case State::SystemMessage: 
+    {
+        switch (event.type) {
+            case EventType::Cancel :
+            {
+                intoPrevState();
+                monitor_.renderTransactionScreen(topAccount_, bottomAccount_, input_, direction_);
+                break;
+            }
+            default : { return; } // Не пропускаем к дальнейшей отрисовке
+        }
+
+        break;
+    }
     }
     DEBUG_MONITOR_SERIAL(topAccount_, bottomAccount_, input_, direction_);
     monitor_.renderTransactionScreen(topAccount_, bottomAccount_, input_, direction_);
+}
+
+/*
+* Логика, которая выполняется каждый тик.
+*/
+void StateMachine::update() {
+    if (currentState_ == State::SystemMessage) {
+        if (millis() - timer_ >= 2500) {
+            intoPrevState();
+            monitor_.renderTransactionScreen(topAccount_, bottomAccount_, input_, direction_);
+        }
+    }
 }

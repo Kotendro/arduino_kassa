@@ -12,6 +12,7 @@ class StateMachine
 private:
     State currentState_ = State::Idle;
     etl::stack<State, 10> prevStateStack_; 
+    uint32_t timer_ = 0;
 
     Account cbAccount_ = {AccountType::CentralBank, 0, 0};
     Account* topAccount_ = &cbAccount_;
@@ -41,7 +42,8 @@ public:
     StateMachine(LCD_1602_RUS& lcd, Beeper& beeper);
 
     void init();
-    void handleEvent(const Event& event); 
+    void handleEvent(const Event& event);
+    void update();
 
     State getCurrentState() const { return currentState_; }
 };

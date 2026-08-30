@@ -6,5 +6,7 @@ enum class State : uint8_t
 {
     Idle,
     Inputting,
-    AfterTransaction
+    AfterTransaction,
+
+    SystemMessage,
 };

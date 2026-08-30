@@ -106,4 +106,5 @@ void loop()
 {
     Event event = pullEvent();
     stateMachine.handleEvent(event);
+    stateMachine.update();
 }
