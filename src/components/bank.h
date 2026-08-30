@@ -1,7 +1,7 @@
 #pragma once
 
 #include <etl/map.h>
-#include <etl/optional.h>
+#include <etl/utility.h>
 #include "types/transactionDirection.h"
 #include "types/card.h"
 #include "types/account.h"
@@ -16,9 +16,9 @@ private:
 
     etl::map<uint64_t, Account, MAX_ACCOUNTS> accounts_;
 public:
-    etl::optional<Account*> createNewAcc(const Card& card);
-    etl::optional<Account*> getOrCreateAcc(const Card& card);
-    etl::optional<Account*> getAcc(const Card& card);
+    etl::pair<Account*, const char*> createNewAcc(const Card& card);
+    etl::pair<Account*, const char*> getOrCreateAcc(const Card& card);
+    etl::pair<Account*, const char*> getAcc(const Card& card);
 
-    void runTransaction(Account* topAcc, Account* bottomAcc, const NumberInput& input, TransactionDirection direction);
+    const char* runTransaction(Account* topAcc, Account* bottomAcc, const NumberInput& input, TransactionDirection direction);
 };

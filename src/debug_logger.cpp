@@ -12,6 +12,7 @@ static const char* stateToString(State state)
         case State::Idle : return "IDLE";
         case State::Inputting : return "INPUTTING";
         case State::AfterTransaction  : return "AFTER TRANSACTION";
+        case State::SystemMessage : return "SYSTEM MESSAGE";
         default: return "UNKNOWN";
     }
 }
@@ -78,7 +79,7 @@ void debugState(const State& state) {
     Serial.println();
 }
 
-void debugError(const __FlashStringHelper* msg)
+void debugError(const char* msg)
 {
     Serial.print(F("ERROR: "));
     Serial.println(msg);

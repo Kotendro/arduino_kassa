@@ -130,15 +130,15 @@ void StateMachine::handleEvent(const Event &event)
         {
             DEBUG_CARD(event.card);
 
-            const etl::optional<Account*> optAcc = bank_.getOrCreateAcc(event.card);
-            if (!optAcc.has_value()) {
-                DEBUG_ERROR(F("Max limit"));
-                monitor_.renderSystemMessage("ДОСТИГНУТО МАКС.\nКОЛ-ВО ИГРОКОВ");
+            auto [acc, err] = bank_.getOrCreateAcc(event.card);
+            if (err != nullptr) {
+                DEBUG_ERROR(err);
+                monitor_.renderSystemMessage(err);
                 setState(State::SystemMessage);
                 return;
             }
 
-            pushAccount(optAcc.value());
+            pushAccount(acc);
             setState(State::Inputting);
             break;
         }
@@ -175,24 +175,22 @@ void StateMachine::handleEvent(const Event &event)
         {
             DEBUG_CARD(event.card);
 
-            const etl::optional<Account*> optAcc = bank_.getOrCreateAcc(event.card);
-            if (!optAcc.has_value()) { 
-                DEBUG_ERROR(F("Max limit"));
-                monitor_.renderSystemMessage("ДОСТИГНУТО МАКС.\nКОЛ-ВО ИГРОКОВ");
+            auto [acc, err] = bank_.getOrCreateAcc(event.card);
+            if (err != nullptr) { 
+                DEBUG_ERROR(err);
+                monitor_.renderSystemMessage(err);
                 setState(State::SystemMessage);
                 return;
             }
-            
-            Account* newAcc = optAcc.value();
 
-            if (topAccount_ == newAcc || bottomAccount_ == newAcc) {
-                DEBUG_ERROR(F("The same card"));
+            if (topAccount_ == acc || bottomAccount_ == acc) {
+                DEBUG_ERROR("The same card");
                 monitor_.renderSystemMessage("ДАННАЯ КАРТА УЖЕ\nСЧИТАНА");
                 setState(State::SystemMessage);
                 return;
             }
 
-            pushAccount(newAcc);
+            pushAccount(acc);
             break;
         }
         case EventType::Confirm :
@@ -243,24 +241,22 @@ void StateMachine::handleEvent(const Event &event)
         {
             DEBUG_CARD(event.card);
 
-            const etl::optional<Account*> optAcc = bank_.getOrCreateAcc(event.card);
-            if (!optAcc.has_value()) { 
-                DEBUG_ERROR(F("Max limit"));
-                monitor_.renderSystemMessage("ДОСТИГНУТО МАКС.\nКОЛ-ВО ИГРОКОВ");
+            auto [acc, err] = bank_.getOrCreateAcc(event.card);
+            if (err != nullptr) { 
+                DEBUG_ERROR(err);
+                monitor_.renderSystemMessage(err);
                 setState(State::SystemMessage);
                 return;
             }
-            
-            Account* newAcc = optAcc.value();
 
-            if (topAccount_ == newAcc || bottomAccount_ == newAcc) {
-                DEBUG_ERROR(F("The same card"));
+            if (topAccount_ == acc || bottomAccount_ == acc) {
+                DEBUG_ERROR("The same card");
                 monitor_.renderSystemMessage("ДАННАЯ КАРТА УЖЕ\nСЧИТАНА");
                 setState(State::SystemMessage);
                 return;
             }
 
-            pushAccount(newAcc);
+            pushAccount(acc);
             break;
         }
         default : {}

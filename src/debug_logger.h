@@ -9,7 +9,7 @@
 void debugCard(const Card& card);
 void debugEvent(const Event& event);
 void debugState(const State& state);
-void debugError(const __FlashStringHelper* msg);
+void debugError(const char* msg);
 void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc,const NumberInput& input, TransactionDirection dir);
 
 #define DEBUG_CARD(card)        debugCard(card)
