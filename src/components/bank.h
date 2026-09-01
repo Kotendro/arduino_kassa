@@ -12,7 +12,7 @@ class Bank
 private:
     static constexpr uint8_t MAX_ACCOUNTS = 6;
     static constexpr uint64_t DEFAULT_START_BALANCE = 1000;
-    static constexpr uint64_t MAX_BALANCE = 99999999000000;
+    static constexpr uint64_t MAX_BALANCE = 9999999000000;
 
     etl::map<uint64_t, Account, MAX_ACCOUNTS> accounts_;
 public:

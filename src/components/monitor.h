@@ -6,6 +6,7 @@
 #include "types/account.h"
 #include "types/transactionDirection.h"
 #include "components/number_input.h"
+#include "components/formator.h"
 
 
 class Monitor
@@ -13,7 +14,6 @@ class Monitor
 private:
     LCD_1602_RUS& lcd_;
 
-    void printBalance(const Account* acc) const;
     void renderLine(uint8_t row, const Account* acc, bool isReceiver, const NumberInput& input) const;
 
 public:

@@ -34,33 +34,6 @@ static const char* eventTypeToString(EventType event)
     }
 }
 
-/*
-* Вспомогательная функция для форматирования баланса.
-* Длина вывода всегда строго 9 символов (8 цифр/пробелов + 1 символ степени).
-*/
-static void printBalanceRightAligned(uint64_t val) {
-    uint32_t displayVal;
-    const char* power = " ";
-    
-    if (val >= 100000000ULL) {
-        if (val >= 100000000000ULL) { // Больше 100 миллиардов
-            displayVal = (uint32_t)(val / 1000000ULL);
-            power = "м";
-        } else {                      // От 100 млн до 100 млрд
-            displayVal = (uint32_t)(val / 1000ULL);
-            power = "т";
-        }
-    } else {
-        displayVal = (uint32_t)val;
-    }
-
-    char buf[10];
-    // %8lu автоматически добавит пробелы слева до 8 символов
-    sprintf(buf, "%8lu", displayVal); 
-    Serial.print(buf);
-    Serial.print(power);
-}
-
 void debugCard(const Card& card) {
     Serial.print(F("Card: "));
     card.printToSerial();
@@ -90,7 +63,8 @@ void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc, const N
 {
     Serial.println(F("================"));
 
-    char inBuf[12]; 
+    constexpr size_t bufferSize = 24;
+    char buffer[bufferSize]; 
 
     // Top line
     if (topAcc == nullptr) {
@@ -102,25 +76,25 @@ void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc, const N
         else Serial.print(F("->"));
         
         if (topAcc->type == AccountType::CentralBank) {
-            Serial.print(F("ЦБ : "));
+            Serial.print(F("ЦБ :"));
 
             if (!isSender && !input.isEmpty()) {
-                input.getRightAlignedStr(inBuf);
-                Serial.println(inBuf);
+                formatInput(buffer, bufferSize, input.getNumberInputView());
+                Serial.println(buffer);
             } else {
                 Serial.println(F("Безлимит ")); 
             }
         } else {
             Serial.print(F("И"));
             Serial.print(topAcc->id);
-            Serial.print(F(" : "));
-            if (!isSender && !input.isEmpty()) {
-                input.getRightAlignedStr(inBuf);
-                Serial.println(inBuf);
-            } else {
-                printBalanceRightAligned(topAcc->balance);
-                Serial.println();
-            }
+            Serial.print(F(" :"));
+
+            if (!isSender && !input.isEmpty()) 
+                formatInput(buffer, bufferSize, input.getNumberInputView());
+            else
+                formatBalance(buffer, bufferSize, topAcc);
+
+            Serial.println(buffer);
         }
     }
 
@@ -134,23 +108,23 @@ void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc, const N
         else Serial.print(F("->"));
         
         if (bottomAcc->type == AccountType::CentralBank) {
-            Serial.print(F("ЦБ : "));
+            Serial.print(F("ЦБ :"));
             if (!isSender && !input.isEmpty()) {
-                input.getRightAlignedStr(inBuf);
-                Serial.println(inBuf);
+                formatInput(buffer, 16, input.getNumberInputView());
+                Serial.println(buffer);
             } else {
                 Serial.println(F("Безлимит "));
             }
         } else {
             Serial.print(F("И"));
             Serial.print(bottomAcc->id);
-            Serial.print(F(" : "));
+            Serial.print(F(" :"));
             if (!isSender && !input.isEmpty()) {
-                input.getRightAlignedStr(inBuf);
-                Serial.println(inBuf);
+                formatInput(buffer, 16, input.getNumberInputView());
+                Serial.println(buffer);
             } else {
-                printBalanceRightAligned(bottomAcc->balance);
-                Serial.println();
+                formatBalance(buffer, bufferSize, bottomAcc);
+                Serial.println(buffer);
             }
         }
     }

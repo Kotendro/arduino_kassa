@@ -24,58 +24,69 @@ bool NumberInput::addChar(char c)
 {
     if (len_ >= MAX_LEN) return false;
 
-    if (c == '0')
+    if (c == ',') 
     {
-        if (len_ == 1 && chars_[0] == '0')
-            return false;
+        if (comma_) return false;
 
+        if (len_ == 0) {
+            chars_[len_++] = '0';
+        }
+
+        comma_ = true;
         chars_[len_++] = c;
+        return true;
+    }
 
-        if (comma_) 
-        {
-            decimals_++;
-            if (decimals_ > 0 && decimals_ <= 3 && kiloPower_ <= 0) {
-                kiloPower_ = 1;
-            } else if (decimals_ > 3 && kiloPower_ <= 1) {
-                kiloPower_ = 2;
-            }
+    if (comma_ && (c >= '0' && c <= '9'))
+    {
+        chars_[len_++] = c;
+        decimals_++;
+
+        if (decimals_ > 0 && decimals_ <= 3 && kiloPower_ <= 0) {
+            kiloPower_ = 1;
+        } else if (decimals_ > 3 && kiloPower_ <= 1) {
+            kiloPower_ = 2;
         }
 
         return true;
     }
 
-    if (c >= '1' && c <= '9') 
+    if (!comma_ && (c >= '0' && c <= '9'))
     {
-        if (len_ == 1 && chars_[0] == '0')
-        {
+        // Защита от второго нуля в начале ("00")
+        if (c == '0' && len_ == 1 && chars_[0] == '0') {
+            return false;
+        }
+
+        // Замена первого нуля на введенную цифру
+        if (c >= '1' && c <= '9' && len_ == 1 && chars_[0] == '0') {
             chars_[0] = c;
             return true;
         }
 
-        if (comma_) 
-        {
-            decimals_++;
-            if (decimals_ > 0 && decimals_ <= 3 && kiloPower_ <= 0) {
-                kiloPower_ = 1;
-            } else if (decimals_ > 3 && kiloPower_ <= 1) {
-                kiloPower_ = 2;
+        char digits[MAX_LEN];
+        uint8_t numDigits = 0;
+        for (uint8_t i = 0; i < len_; i++) {
+            if (chars_[i] >= '0' && chars_[i] <= '9') {
+                digits[numDigits++] = chars_[i];
             }
         }
 
-        chars_[len_++] = c;
-        return true;
-    }
+        digits[numDigits++] = c;
 
-    if (c == ',') 
-    {
-        if (comma_) 
+        uint8_t requiredSpaces = (numDigits > 0) ? ((numDigits - 1) / 3) : 0;
+        if ((numDigits + requiredSpaces) > MAX_LEN) {
             return false;
+        }
 
-        if (len_ == 0)
-            chars_[len_++] = '0';
+        len_ = 0;
+        for (uint8_t i = 0; i < numDigits; i++) {
+            if (i > 0 && (numDigits - i) % 3 == 0) {
+                chars_[len_++] = ' ';
+            }
+            chars_[len_++] = digits[i];
+        }
 
-        comma_ = true;
-        chars_[len_++] = c;
         return true;
     }
 
@@ -111,34 +122,45 @@ void NumberInput::delChar()
 {
     if (len_ == 0) return;
 
-    len_--;
+    if (comma_) 
+    {
+        len_--;
+        char deleted = chars_[len_];
 
-    if (chars_[len_] == ',') {
-        comma_ = false;
-    } else if (comma_) {
-        decimals_--;
+        if (deleted == ',') {
+            comma_ = false;
+            decimals_ = 0;
+            kiloPower_ = 0;
+        } else if (decimals_ > 0) {
+            decimals_--;
+        }
+        return;
+    }
+
+
+    char digits[MAX_LEN];
+    uint8_t numDigits = 0;
+    for (uint8_t i = 0; i < len_; i++) {
+        if (chars_[i] >= '0' && chars_[i] <= '9') {
+            digits[numDigits++] = chars_[i];
+        }
+    }
+
+    if (numDigits > 0) {
+        numDigits--;
+    }
+
+    len_ = 0;
+    for (uint8_t i = 0; i < numDigits; i++) {
+        if (i > 0 && (numDigits - i) % 3 == 0) {
+            chars_[len_++] = ' ';
+        }
+        chars_[len_++] = digits[i];
     }
 
     if (len_ == 0) {
         kiloPower_ = 0;
     }
-}
-
-/*
-* Записывает отформатированный ввод (8 цифр + степень) в переданный буфер
-*/
-void NumberInput::getRightAlignedStr(char* buffer) const
-{
-    uint8_t index = 0;
-    
-    for (uint8_t i = 0; i < 8 - len_; i++) buffer[index++] = ' ';
-    for (uint8_t i = 0; i < len_; i++) buffer[index++] = chars_[i];
-    
-    buffer[index] = '\0';
-    
-    if (kiloPower_ == 1) strcat(buffer, "Т");
-    else if (kiloPower_ == 2) strcat(buffer, "М");
-    else strcat(buffer, " ");
 }
 
 /*
@@ -151,7 +173,7 @@ void NumberInput::enterKey(char key)
 {
     if ((key >= '0' && key <= '9') || (key == ',')) addChar(key);
     else if (!isEmpty()) {
-        if (key == '<') delChar();
+        if      (key == '<') delChar();
         else if (key == '^') nextKiloPower();
     }
 }
@@ -164,7 +186,7 @@ uint64_t NumberInput::packInto64() const
     uint64_t res = 0;
 
     for (uint8_t i = 0; i < len_; i++) {
-        if (chars_[i] == ',') continue;
+        if (chars_[i] == ',' || chars_[i] == ' ') continue;
         res = res * 10 + (chars_[i] - '0');
     }
 

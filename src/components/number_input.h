@@ -2,13 +2,24 @@
 
 #include <Arduino.h>
 
+/*
+* Данные из NumberInput, нужные для отображения вывода.
+*/
+struct NumberInputView {
+    const char* chars_;
+    uint8_t len_ = 0;
+    uint8_t kiloPower_ = 0;
+    uint8_t decimals_ = 0;
+    bool comma_;
+};
+
 /* 
-* Cтруктура хранения введенного числа (без вывода на экран) 
+* Бизнес-логика ввода числа.
 */
 class NumberInput
 {
 private:
-    static constexpr uint8_t MAX_LEN = 8;
+    static constexpr uint8_t MAX_LEN = 9;
 
     char chars_[MAX_LEN] = {};
     uint8_t len_ = 0;
@@ -27,5 +38,7 @@ public:
     void clear();
 
     uint64_t packInto64() const;
-    void getRightAlignedStr(char* buffer) const;
+    NumberInputView getNumberInputView() const { 
+        return {chars_, len_, kiloPower_, decimals_, comma_};
+    }
 };

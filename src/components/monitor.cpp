@@ -2,38 +2,6 @@
 
 Monitor::Monitor(LCD_1602_RUS& lcd) : lcd_(lcd) {}
 
-/* 
-* Вспомогательная функция для баланса.
-* Она же преобразует баланс в тысячи и милионны при необходимости.
-*/
-void Monitor::printBalance(const Account* acc) const {
-    if (acc->type == AccountType::CentralBank) {
-        lcd_.print("БЕЗЛИМИТ ");
-        return;
-    }
-
-    uint64_t val = acc->balance;
-    uint32_t displayVal;
-    const char* power = " ";
-    
-    if (val >= 100000000ULL) {
-        if (val >= 100000000000ULL) { 
-            displayVal = (uint32_t)(val / 1000000ULL);
-            power = "М";
-        } else {
-            displayVal = (uint32_t)(val / 1000ULL);
-            power = "Т";
-        }
-    } else {
-        displayVal = (uint32_t)val;
-    }
-
-    char buf[16];
-    sprintf(buf, "%8lu", displayVal); 
-    lcd_.print(buf);
-    lcd_.print(power);
-}
-
 /*
 * Отрисовка одной строки экрана ровно на 16 символов.
 */
@@ -61,17 +29,19 @@ void Monitor::renderLine(uint8_t row, const Account* acc, bool isReceiver, const
     }
 
     // Режим ввода или баланс (3 символа)
-    if (showInput) lcd_.print("-> ");
-    else           lcd_.print(" : ");
+    if (showInput) lcd_.print("->");
+    else           lcd_.print(" :");
 
-    // Ввод или Баланс (9 символов)
-    if (showInput) {
-        char inBuf[12];
-        input.getRightAlignedStr(inBuf);
-        lcd_.print(inBuf);
-    } else {
-        printBalance(acc);
-    }
+    // Ввод или Баланс (10 символов)
+    uint8_t bufferSize = 24;
+    char buffer[bufferSize];
+    
+    if (showInput)
+        formatInput(buffer, bufferSize, input.getNumberInputView());
+    else
+        formatBalance(buffer, bufferSize, acc);
+
+    lcd_.print(buffer);
 }
 
 /*
