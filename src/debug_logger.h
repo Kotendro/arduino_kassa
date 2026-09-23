@@ -1,0 +1,30 @@
+#pragma once
+
+#include "config.h"
+#include "components.h"
+#include "types.h"
+
+#ifdef DEBUG_MODE
+
+void debugCard(const Card& card);
+void debugEvent(const Event& event);
+void debugState(const State& state);
+void debugError(const char* msg);
+void debugMonitorSerial(const Account* topAcc, const Account* bottomAcc,const NumberInput& input, TransactionDirection dir);
+
+#define DEBUG_CARD(card)        debugCard(card)
+#define DEBUG_EVENT(event)      debugEvent(event)
+#define DEBUG_STATE(state)      debugState(state)
+#define DEBUG_ERROR(msg)        debugError(msg)
+#define DEBUG_MONITOR_SERIAL(topAcc, bottomAcc, input,dir) \
+    debugMonitorSerial(topAcc, bottomAcc,input, dir)
+
+#else
+
+#define DEBUG_CARD(card)
+#define DEBUG_EVENT(event)
+#define DEBUG_STATE(state)
+#define DEBUG_ERROR(msg)
+#define DEBUG_MONITOR_SERIAL(topAcc, bottomAcc, input,dir)
+
+#endif
